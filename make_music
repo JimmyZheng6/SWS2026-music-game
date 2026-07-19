@@ -1,0 +1,51 @@
+import {
+    consecutively,
+    silence_sound,
+    sine_sound,
+    letter_name_to_frequency,
+    play,
+    simultaneously
+} from "sound";
+
+function make_sound_list(notes, lengths) {
+    return is_null(notes)
+        ? null
+        : pair(
+              head(notes) === "R"
+                  ? silence_sound(head(lengths))
+                  : sine_sound(
+                        letter_name_to_frequency(head(notes)),
+                        head(lengths)
+                    ),
+              make_sound_list(tail(notes), tail(lengths))
+          );
+}
+
+function make_piano(r_notes, r_lengths,
+                    l_notes, l_lengths) {
+    return simultaneously(
+        list(
+            consecutively(make_sound_list(r_notes, r_lengths)),
+            consecutively(make_sound_list(l_notes, l_lengths))
+        )
+    );
+}
+
+
+const right_notes = list("C4", "R", "G4", "R");
+const right_lengths = list(0.5, 0.5, 0.5, 0.5);
+
+const left_notes = list("R", "C3", "R", "G3");
+const left_lengths = list(0.5, 0.5, 0.5, 0.5);
+
+play(make_piano(right_notes, right_lengths, left_notes, left_lengths));
+
+
+
+
+
+
+
+
+
+
