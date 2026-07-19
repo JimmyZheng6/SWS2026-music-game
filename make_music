@@ -40,8 +40,8 @@ const left_lengths = list(0.5, 0.5, 0.5, 0.5);
 
 // Speed changing tool
 
-const fast_right_lengths = map(x => x * 1.5, right_lengths);
-const fast_left_lengths = map(x => x * 1.5, left_lengths);
+const fast_right_lengths = map(x => x * 0.5, right_lengths);
+const fast_left_lengths = map(x => x * 0.5, left_lengths);
 
 
 // Volume changing tool
