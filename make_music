@@ -4,7 +4,9 @@ import {
     sine_sound,
     letter_name_to_frequency,
     play,
-    simultaneously
+    simultaneously,
+    make_sound,
+    get_wave
 } from "sound";
 
 function make_sound_list(notes, lengths) {
@@ -13,9 +15,13 @@ function make_sound_list(notes, lengths) {
         : pair(
               head(notes) === "R"
                   ? silence_sound(head(lengths))
-                  : sine_sound(
-                        letter_name_to_frequency(head(notes)),
-                        head(lengths)
+                  : make_sound(
+                        t => (letter_name_to_frequency(head(notes)) > letter_name_to_frequency("F5")
+                        ? 0.14
+                        : 1)
+                        * get_wave(
+                            sine_sound(letter_name_to_frequency(head(notes)),head(lengths)))(t),
+                    head(lengths)
                     ),
               make_sound_list(tail(notes), tail(lengths))
           );
