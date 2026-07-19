@@ -6,7 +6,8 @@ import {
     play,
     simultaneously,
     make_sound,
-    get_wave
+    get_wave,
+    get_duration
 } from "sound";
 
 function make_sound_list(notes, lengths) {
@@ -27,16 +28,7 @@ function make_sound_list(notes, lengths) {
           );
 }
 
-function make_piano(r_notes, r_lengths,
-                    l_notes, l_lengths) {
-    return simultaneously(
-        list(
-            consecutively(make_sound_list(r_notes, r_lengths)),
-            consecutively(make_sound_list(l_notes, l_lengths))
-        )
-    );
-}
-
+// Just for test
 
 const right_notes = list("C4", "R", "G4", "R");
 const right_lengths = list(0.5, 0.5, 0.5, 0.5);
@@ -44,10 +36,39 @@ const right_lengths = list(0.5, 0.5, 0.5, 0.5);
 const left_notes = list("R", "C3", "R", "G3");
 const left_lengths = list(0.5, 0.5, 0.5, 0.5);
 
-play(make_piano(right_notes, right_lengths, left_notes, left_lengths));
+
+
+// Speed changing tool
+
+const fast_right_lengths = map(x => x * 1.5, right_lengths);
+const fast_left_lengths = map(x => x * 1.5, left_lengths);
+
+
+// Volume changing tool
+
+function change_volume(sound, volume) {
+    return make_sound(
+        t => volume * get_wave(sound)(t),
+        get_duration(sound)
+    );
+}
 
 
 
+const right_hand = consecutively(
+    make_sound_list(right_notes, fast_right_lengths)
+);
+
+const left_hand = change_volume(
+    consecutively(make_sound_list(left_notes, fast_left_lengths)),
+    0.8
+);
+
+
+
+
+
+play(simultaneously(list(right_hand, left_hand)));
 
 
 
