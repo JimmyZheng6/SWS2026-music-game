@@ -27,17 +27,22 @@ const right_lengths = list(
 
 );
 
-const left_notes = list();
-const left_lengths = list();
+const left_notes = list(
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", ""
+);
+const left_lengths = list(
+
+);
 
 
 
-// Speed changing tool
 
-const fast_right_lengths = map(x => x * 1.5, right_lengths);
-
-
-
-play(make_piano(right_notes, fast_right_lengths, left_notes, left_lengths));
 
 
