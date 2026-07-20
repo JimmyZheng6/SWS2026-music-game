@@ -7,6 +7,7 @@ import {
     input_key_down,
     update_loop,
     update_to_top,
+    create_sprite,
     set_dimensions,
     build_game
 } from "arcade_2d";
@@ -30,7 +31,7 @@ function add_vectors(to, from) {
 
 const WIDTH = 600;
 const HEIGHT = 600;
-const TILE = 30;
+const TILE = 25;
 
 const PLAYER_SIZE = TILE * 0.5;
 const HALF = PLAYER_SIZE / 2;
@@ -46,6 +47,15 @@ let player_row = 1;
 let player_col = 1;
 
 const NOTE_NUM = 2;
+
+const PLAYER_IMG =
+"https://labs.phaser.io/assets/sprites/phaser-dude.png";
+
+const NOTE_IMG =
+"https://labs.phaser.io/assets/sprites/star.png";
+
+const EXIT_IMG =
+"https://labs.phaser.io/assets/sprites/diamond.png";
 
 //==================================================
 // 初始化地图
@@ -305,66 +315,80 @@ for (let i = 0; i < NOTE_NUM; i = i + 1) {
 
 let player = null;
 
+
 for (let i = 0; i < ROWS; i = i + 1) {
 
     for (let j = 0; j < COLS; j = j + 1) {
 
+
         const x = j * TILE + TILE / 2;
         const y = i * TILE + TILE / 2;
+
 
         // 地板
         update_color(
             update_position(
-                create_rectangle(TILE, TILE),
-                [x, y]
+                create_rectangle(TILE,TILE),
+                [x,y]
             ),
             [220,220,220,255]
         );
 
+
+        // 墙
         if (map[i][j] === 1) {
 
             update_color(
                 update_position(
-                    create_rectangle(TILE, TILE),
-                    [x, y]
+                    create_rectangle(TILE,TILE),
+                    [x,y]
                 ),
                 [70,70,70,255]
             );
 
-        } else if (map[i][j] === 2) {
-
-            player = update_color(
-              update_position(
-                 create_rectangle(TILE * 0.5, TILE * 0.5),
-                 [x, y]
-              ),
-              [0,255,0,255]
-            );
-
-         update_to_top(player);
-
-        
-
-        } else if (map[i][j] === 3) {
-
-            update_color(
-                update_position(
-                    create_circle(TILE * 0.2),
-                    [x, y]
-                ),
-                [255,255,0,255]
-            );
-
-        } else if (map[i][j] === 4) {
-
-            update_color(
-                update_position(
-                    create_rectangle(TILE * 0.7, TILE * 0.7),
-                    [x, y]
-                ),
-                [0,0,255,255]
-            );
         }
+
+
+        // 玩家
+        else if (map[i][j] === 2) {
+
+
+            player =
+                update_position(
+                    create_sprite(PLAYER_IMG),
+                    [x,y]
+                );
+
+
+            update_to_top(player);
+
+        }
+
+
+        // 音符
+        else if (map[i][j] === 3) {
+
+
+            update_position(
+                create_sprite(NOTE_IMG),
+                [x,y]
+            );
+
+
+        }
+
+
+        // 出口
+        else if (map[i][j] === 4) {
+
+
+            update_position(
+                create_sprite(EXIT_IMG),
+                [x,y]
+            );
+
+        }
+
     }
 }
 // ====================
