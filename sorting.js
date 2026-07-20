@@ -185,8 +185,21 @@ function find_previewed_fragment() {
 }
 
 function play_fragment_audio(fragment) {
-  // TODO: Delegate this fragment to the Sound System when it is integrated.
-  // The Sorting System intentionally owns no audio implementation details.
+  const fragment_label = fragment[LABEL_INDEX];
+
+  if (fragment_label === "A") {
+    // TODO: Sound System integration — play music fragment A.
+  } else if (fragment_label === "B") {
+    // TODO: Sound System integration — play music fragment B.
+  } else if (fragment_label === "C") {
+    // TODO: Sound System integration — play music fragment C.
+  } else if (fragment_label === "D") {
+    // TODO: Sound System integration — play music fragment D.
+  } else if (fragment_label === "E") {
+    // TODO: Sound System integration — play music fragment E.
+  }
+
+  // Playback remains owned by the Sound System; this system only selects it.
   return undefined;
 }
 
