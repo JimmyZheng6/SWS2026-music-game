@@ -48,6 +48,31 @@ const DISABLED_BUTTON_COLOUR = [140, 140, 140, 255];
 
 const fragment_labels = ["A", "B", "C", "D", "E"];
 const target_order = ["A", "B", "C", "D", "E"];
+// Replace each no-op with the matching Sound System playback function during
+// integration. Keeping this map local prevents the sorting logic from knowing
+// about audio implementation details.
+const fragment_audio_players = {
+  A: function play_fragment_a_audio() {
+    // TODO: Connect fragment A to the Sound System after integration.
+    return undefined;
+  },
+  B: function play_fragment_b_audio() {
+    // TODO: Connect fragment B to the Sound System after integration.
+    return undefined;
+  },
+  C: function play_fragment_c_audio() {
+    // TODO: Connect fragment C to the Sound System after integration.
+    return undefined;
+  },
+  D: function play_fragment_d_audio() {
+    // TODO: Connect fragment D to the Sound System after integration.
+    return undefined;
+  },
+  E: function play_fragment_e_audio() {
+    // TODO: Connect fragment E to the Sound System after integration.
+    return undefined;
+  }
+};
 
 // This fixed starting layout makes the player solve the puzzle every time.
 // Each entry gives the slot occupied by the matching label above.
@@ -57,6 +82,8 @@ const fragments = [];
 const current_order = ["", "", "", "", ""];
 
 let dragged_fragment = undefined;
+let drag_start_pointer_position = undefined;
+let dragged_fragment_has_moved = false;
 let mouse_was_down = false;
 let puzzle_is_active = true;
 let timer_has_started = false;
@@ -142,23 +169,47 @@ function update_current_order() {
   }
 }
 
+// Sorting-side audio seam. This is the only call site used by interaction code.
+function play_fragment_audio(fragment) {
+  const playback_function = fragment_audio_players[fragment[LABEL_INDEX]];
+
+  if (playback_function !== undefined) {
+    playback_function();
+  }
+
+  return undefined;
+}
+
 function start_drag_if_possible() {
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
     const fragment = fragments[index];
     if (pointer_over_gameobject(fragment[RECTANGLE_INDEX]) ||
-        pointer_over_gameobject(fragment[LABEL_TEXT_INDEX])){
-        dragged_fragment = fragment;
-        update_to_top(fragment[RECTANGLE_INDEX]);
-        update_to_top(fragment[LABEL_TEXT_INDEX]);
-        return undefined;
+        pointer_over_gameobject(fragment[LABEL_TEXT_INDEX])) {
+      dragged_fragment = fragment;
+      drag_start_pointer_position = query_pointer_position();
+      dragged_fragment_has_moved = false;
+      update_to_top(fragment[RECTANGLE_INDEX]);
+      update_to_top(fragment[LABEL_TEXT_INDEX]);
+      return undefined;
     }
   }
 
   return undefined;
 }
 
+function pointer_has_moved_from_drag_start(pointer_position) {
+  return pointer_position[0] !== drag_start_pointer_position[0]
+    || pointer_position[1] !== drag_start_pointer_position[1];
+}
+
 function drag_fragment() {
   const pointer_position = query_pointer_position();
+
+  if (!dragged_fragment_has_moved &&
+      pointer_has_moved_from_drag_start(pointer_position)) {
+    dragged_fragment_has_moved = true;
+  }
+
   update_position(dragged_fragment[RECTANGLE_INDEX], pointer_position);
   update_position(dragged_fragment[LABEL_TEXT_INDEX], pointer_position);
   update_to_top(dragged_fragment[RECTANGLE_INDEX]);
@@ -191,6 +242,12 @@ function swap_fragments(first_fragment, second_fragment) {
 function release_drag() {
   const overlapped_fragment = find_overlapped_fragment();
 
+  // Playback happens on release only when the pointer remained a click, so a
+  // held or moving drag can never restart its fragment audio every frame.
+  if (!dragged_fragment_has_moved) {
+    play_fragment_audio(dragged_fragment);
+  }
+
   if (overlapped_fragment === undefined) {
     move_fragment_to_slot(dragged_fragment);
   } else {
@@ -198,6 +255,8 @@ function release_drag() {
   }
 
   dragged_fragment = undefined;
+  drag_start_pointer_position = undefined;
+  dragged_fragment_has_moved = false;
 }
 
 function start_timer() {
@@ -274,6 +333,8 @@ function end_game() {
 
   puzzle_is_active = false;
   dragged_fragment = undefined;
+  drag_start_pointer_position = undefined;
+  dragged_fragment_has_moved = false;
   snap_fragments();
   update_color(submit_button, DISABLED_BUTTON_COLOUR);
   update_color(submit_button_text, [220, 220, 220, 255]);
