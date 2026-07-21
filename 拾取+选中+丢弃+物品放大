@@ -23,6 +23,13 @@ const inventory = [
 ];
 
 let selected_slot = 0;
+
+//======================
+// Highlight
+//======================
+
+let piece_scale = [];
+
 //======================
 // Inventory UI
 //======================
@@ -252,6 +259,53 @@ function update_pickup_text(x, y) {
 
 }
 
+function highlight_items(x, y) {
+
+    for (let i = 0; i < array_length(world_items); i = i + 1) {
+
+        if (world_items[i] !== undefined) {
+
+            const pos =
+                query_position(world_items[i][1]);
+
+            const dx = x - pos[0];
+            const dy = y - pos[1];
+
+            if (dx * dx + dy * dy < 80 * 80) {
+
+                if (piece_scale[i] < 0.35) {
+                    piece_scale[i] =
+                        piece_scale[i] + 0.005;
+                }
+
+            } else {
+
+                if (piece_scale[i] > 0.25) {
+                    piece_scale[i] =
+                        piece_scale[i] - 0.005;
+                }
+
+            }
+
+           if (piece_scale[i] === undefined) {
+    piece_scale[i] = 0.25;
+}
+
+if (piece_scale[i] === undefined) {
+    piece_scale[i] = 0.25;
+}
+
+update_scale(
+    world_items[i][1],
+    [piece_scale[i], piece_scale[i]]
+);
+
+        }
+
+    }
+
+}
+
 function drop_item(x, y) {
 
     if (input_key_down("q")) {
@@ -265,8 +319,15 @@ function drop_item(x, y) {
     [x + 40, y]
 );
 
-world_items[array_length(world_items)] =
-    [item, drop_pool[next_drop]];
+const new_index = array_length(world_items);
+
+world_items[new_index] =
+    [item, drop_pool[next_drop], false];
+
+piece_scale[new_index] = 0.25;
+
+//new drop
+piece_scale[array_length(world_items) - 1] = 0.25;
 
 remove_item(selected_slot);
 
@@ -326,6 +387,10 @@ const world_items = [
 
 ];
 
+for (let i = 0; i < array_length(world_items); i = i + 1) {
+    piece_scale[i] = 0.25;
+}
+
 //======================
 // Drop Pool
 //======================
@@ -384,6 +449,8 @@ const x = player_pos[0];
 const y = player_pos[1];
     
 select_slot();
+
+highlight_items(x, y);
 
 update_pickup_text(x, y);
 
