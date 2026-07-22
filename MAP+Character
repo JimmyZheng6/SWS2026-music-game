@@ -218,50 +218,38 @@ function spawn_note(){
 
         for(let i=0;i<array_length(notes);i=i+1){
 
-            const old_r=notes[i][0];
-            const old_c=notes[i][1];
+    if(notes[i][0]!==-1){
+
+        const old_r=notes[i][0];
+        const old_c=notes[i][1];
 
 
-            const dr=r-old_r;
-            const dc=c-old_c;
+        const dr=r-old_r;
+        const dc=c-old_c;
 
 
-            if(dr*dr+dc*dc<16){
+        if(dr*dr+dc*dc<16){
 
-                far=false;
-
-            }
+            far=false;
 
         }
+
+    }
+
+}
 
 
         if(map[r][c]===0&&far){
 
             map[r][c]=3;
+            
+            const note_color=[math_floor(math_random()*255),
+            math_floor(math_random()*255), 
+            math_floor(math_random()*255),255];
+            const note =update_position(update_color(update_scale(
+            create_text("♪"),[2,2]),note_color),[c*TILE+TILE/2,r*TILE+TILE/2]);
 
-            notes[array_length(notes)] = [r,c];
-
-
-            const note =
-            update_position(
-                update_color(
-                    update_scale(
-                        create_text("♪"),
-                        [2,2]
-                    ),
-                    [
-                        math_floor(math_random()*255),
-                        math_floor(math_random()*255),
-                        math_floor(math_random()*255),
-                        255
-                    ]
-                ),
-                [
-                    c*TILE+TILE/2,
-                    r*TILE+TILE/2
-                ]
-            );
-
+            notes[array_length(notes)] = [r,c,note_color];
 
             note_objects[array_length(note_objects)]=note;
 
@@ -332,35 +320,93 @@ update_to_top(player);
 // Inventory
 //====================
 
-const inventory=["","","","",""];
+const inventory=["","","","","","","",""];
 let selected_slot=0;
 
-const inventory_text=
-update_position(
-    create_text(""),
-    [400,760]
-);
+const inventory_text=[];
+
+
+for(let i=0;i<8;i=i+1){
+
+    inventory_text[i]=
+    create_text("");
+
+}
+
+const slot_positions=[
+    [250,760],
+    [350,760],
+    [450,760],
+    [550,760],
+    [250,780],
+    [350,780],
+    [450,780],
+    [550,780]
+];
+
+
+for(let i=0;i<8;i=i+1){
+
+    update_position(
+        inventory_text[i],
+        slot_positions[i]
+    );
+
+}
 
 const pickup_text=
 update_position(
     create_text(""),
-    [400,780]
+    [400,790]
 );
 
 
 function update_inventory(){
 
-    update_text(
-        inventory_text,
-        (selected_slot===0?">":" ")+"[1] "+inventory[0]+"  "+
-        (selected_slot===1?">":" ")+"[2] "+inventory[1]+"  "+
-        (selected_slot===2?">":" ")+"[3] "+inventory[2]+"  "+
-        (selected_slot===3?">":" ")+"[4] "+inventory[3]+"  "+
-        (selected_slot===4?">":" ")+"[5] "+inventory[4]
-    );
+
+    for(let i=0;i<8;i=i+1){
+
+
+        const numbers=["[1] ","[2] ","[3] ","[4] ","[5] ","[6] ","[7] ","[8] "];
+        let text=numbers[i];
+
+
+        if(inventory[i]!==""){
+
+            text=text+inventory[i][0];
+
+
+            update_color(
+                inventory_text[i],
+                inventory[i][1]
+            );
+
+        }
+        else{
+
+            update_color(
+                inventory_text[i],
+                [255,255,255,255]
+            );
+
+        }
+
+
+        if(selected_slot===i){
+
+            text=">"+text;
+
+        }
+
+
+        update_text(
+            inventory_text[i],
+            text
+        );
+
+    }
+
 }
-
-
 
 
 //====================
@@ -371,7 +417,7 @@ function add_item(item){
 
     let added=false;
 
-    for(let i=0;i<5;i=i+1){
+    for(let i=0;i<8;i=i+1){
 
         if(!added&&inventory[i]===""){
 
@@ -389,7 +435,7 @@ function add_item(item){
 
 function remove_item(slot){
 
-    if(slot>=0&&slot<5){
+    if(slot>=0&&slot<8){
 
         inventory[slot]="";
 
@@ -420,6 +466,18 @@ function select_slot(){
 
     if(input_key_down("5")){
         selected_slot=4;
+    }
+    if(input_key_down("6")){
+    selected_slot=5;
+    }
+    
+    if(input_key_down("7")){
+    selected_slot=6;
+        
+    }
+    if(input_key_down("8")){
+    selected_slot=7;
+        
     }
 
 }
@@ -514,7 +572,7 @@ function pickup_notes(x,y){
                 if(input_key_down("e")){
 
                     const success=
-                    add_item("Music Note");
+                    add_item(["♪", notes[i][2]]);
 
 
                     if(success){
@@ -535,6 +593,7 @@ function pickup_notes(x,y){
 
 
                         update_inventory();
+                        break;
 
                     }
 
