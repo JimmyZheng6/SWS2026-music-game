@@ -49,6 +49,15 @@ const PREVIEW_BUTTON_INDEX = 4;
 const PREVIEW_BUTTON_TEXT_INDEX = 5;
 const AUDIO_INDEX = 6;
 const DISC_CENTER_INDEX = 7;
+const FRAGMENT_ID_INDEX = 8;
+const FRAGMENT_SONG_ID_INDEX = 9;
+
+// Incoming fragment array indexes.
+// Each item received from the previous level must be:
+// [fragment_id, song_id, audio_url]
+const INPUT_ID_INDEX = 0;
+const INPUT_SONG_ID_INDEX = 1;
+const INPUT_AUDIO_URL_INDEX = 2;
 
 // Colours use the documented [red, green, blue, alpha] format.
 const FRAGMENT_COLOURS = [
@@ -71,16 +80,35 @@ const STOP_BUTTON_COLOUR = [192, 57, 43, 255];
 const DISABLED_BUTTON_COLOUR = [140, 140, 140, 255];
 
 const fragment_labels = ["A", "B", "C", "D", "E"];
-const target_order = ["A", "B", "C", "D", "E"];
 
-// These working sample URLs can be replaced with the five real melody files.
-// Keeping the URLs in one array makes the replacement straightforward.
-const fragment_audio_urls = [
-  "https://labs.phaser.io/assets/audio/tech/bass.mp3",
-  "https://labs.phaser.io/assets/audio/tech/bass.mp3",
-  "https://labs.phaser.io/assets/audio/tech/bass.mp3",
-  "https://labs.phaser.io/assets/audio/tech/bass.mp3",
-  "https://labs.phaser.io/assets/audio/tech/bass.mp3"
+// Trusted configuration owned by this level, not by the previous level.
+const TARGET_SONG_ID = "song_01";
+const TARGET_FRAGMENT_IDS = [
+  "song_01_part_1",
+  "song_01_part_2",
+  "song_01_part_3",
+  "song_01_part_4",
+  "song_01_part_5"
+];
+
+// Result values returned to the level controller.
+const RESULT_SOLVED = "solved";
+const RESULT_WRONG_SONG = "wrong_song";
+const RESULT_WRONG_FRAGMENTS = "wrong_fragments";
+const RESULT_WRONG_ORDER = "wrong_order";
+const RESULT_INVALID_INPUT = "invalid_input";
+const RESULT_TIME_UP = "time_up";
+
+// Stand-alone demonstration data. In the full game, the previous level passes
+// its own list to start_melody_sorting_level instead.
+const SAMPLE_AUDIO_URL =
+  "https://labs.phaser.io/assets/audio/tech/bass.mp3";
+const DEMO_FRAGMENT_LIST = [
+  ["song_01_part_1", "song_01", SAMPLE_AUDIO_URL],
+  ["song_01_part_2", "song_01", SAMPLE_AUDIO_URL],
+  ["song_01_part_3", "song_01", SAMPLE_AUDIO_URL],
+  ["song_01_part_4", "song_01", SAMPLE_AUDIO_URL],
+  ["song_01_part_5", "song_01", SAMPLE_AUDIO_URL]
 ];
 
 // This fixed starting layout makes the player solve the puzzle every time.
@@ -88,10 +116,11 @@ const fragment_audio_urls = [
 const initial_slot_indexes = [2, 0, 4, 1, 3];
 const slot_positions = [];
 const fragments = [];
-const current_order = ["", "", "", "", ""];
 const equalizer_bars = [];
 const floating_notes = [];
 
+let received_fragment_list = [];
+let result_callback = undefined;
 let dragged_fragment = undefined;
 let playing_fragment = undefined;
 let mouse_was_down = false;
@@ -166,6 +195,10 @@ function create_slot_positions() {
 
 function create_fragments() {
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    const input_fragment = received_fragment_list[index];
+    const fragment_id = input_fragment[INPUT_ID_INDEX];
+    const song_id = input_fragment[INPUT_SONG_ID_INDEX];
+    const audio_url = input_fragment[INPUT_AUDIO_URL_INDEX];
     const disc = update_color(
       create_circle(FRAGMENT_RADIUS),
       FRAGMENT_COLOURS[index]
@@ -195,8 +228,10 @@ function create_fragments() {
       label_text,
       preview_button,
       preview_button_text,
-      create_audio(fragment_audio_urls[index], 1),
-      disc_center
+      create_audio(audio_url, 1),
+      disc_center,
+      fragment_id,
+      song_id
     ];
 
     update_scale(fragment[LABEL_TEXT_INDEX], [1.5, 1.5]);
@@ -204,8 +239,6 @@ function create_fragments() {
     fragments[index] = fragment;
     move_fragment_to_slot(fragment);
   }
-
-  update_current_order();
 }
 
 function move_fragment_to_position(fragment, fragment_position) {
@@ -239,21 +272,6 @@ function move_fragment_to_front(fragment) {
 function snap_fragments() {
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
     move_fragment_to_slot(fragments[index]);
-  }
-}
-
-function update_current_order() {
-  for (let slot_index = 0;
-       slot_index < FRAGMENT_COUNT;
-       slot_index = slot_index + 1) {
-    for (let fragment_index = 0;
-         fragment_index < FRAGMENT_COUNT;
-         fragment_index = fragment_index + 1) {
-      const fragment = fragments[fragment_index];
-      if (fragment[SLOT_INDEX] === slot_index) {
-        current_order[slot_index] = fragment[LABEL_INDEX];
-      }
-    }
   }
 }
 
@@ -343,7 +361,6 @@ function swap_fragments(first_fragment, second_fragment) {
   first_fragment[SLOT_INDEX] = second_fragment[SLOT_INDEX];
   second_fragment[SLOT_INDEX] = first_slot;
   snap_fragments();
-  update_current_order();
 }
 
 function release_drag() {
@@ -392,7 +409,7 @@ function update_timer() {
   draw_timer();
 
   if (time_remaining_ms === 0) {
-    end_game();
+    finish_game("Time is up.", RESULT_TIME_UP);
   }
 }
 
@@ -496,15 +513,20 @@ function create_submit_button() {
   return undefined;
 }
 
-function handle_submit() {
-  if (puzzle_is_active) {
-    end_game();
+function validate_input_fragment_list(fragment_list) {
+  if (fragment_list === undefined
+      || array_length(fragment_list) !== FRAGMENT_COUNT) {
+    return false;
   }
-}
 
-function check_solution() {
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
-    if (current_order[index] !== target_order[index]) {
+    const input_fragment = fragment_list[index];
+
+    if (input_fragment === undefined
+        || array_length(input_fragment) !== 3
+        || input_fragment[INPUT_ID_INDEX] === undefined
+        || input_fragment[INPUT_SONG_ID_INDEX] === undefined
+        || input_fragment[INPUT_AUDIO_URL_INDEX] === undefined) {
       return false;
     }
   }
@@ -512,7 +534,94 @@ function check_solution() {
   return true;
 }
 
-function end_game() {
+function find_fragment_in_slot(slot_index) {
+  for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    if (fragments[index][SLOT_INDEX] === slot_index) {
+      return fragments[index];
+    }
+  }
+
+  return undefined;
+}
+
+function fragments_belong_to_target_song() {
+  for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    if (fragments[index][FRAGMENT_SONG_ID_INDEX] !== TARGET_SONG_ID) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function has_exact_target_fragments() {
+  for (let target_index = 0;
+       target_index < FRAGMENT_COUNT;
+       target_index = target_index + 1) {
+    const target_id = TARGET_FRAGMENT_IDS[target_index];
+    let matching_count = 0;
+
+    for (let fragment_index = 0;
+         fragment_index < FRAGMENT_COUNT;
+         fragment_index = fragment_index + 1) {
+      if (fragments[fragment_index][FRAGMENT_ID_INDEX] === target_id) {
+        matching_count = matching_count + 1;
+      }
+    }
+
+    // Every required fragment must appear exactly once.
+    if (matching_count !== 1) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function fragments_are_in_correct_order() {
+  for (let slot_index = 0;
+       slot_index < FRAGMENT_COUNT;
+       slot_index = slot_index + 1) {
+    const fragment = find_fragment_in_slot(slot_index);
+
+    if (fragment === undefined
+        || fragment[FRAGMENT_ID_INDEX]
+           !== TARGET_FRAGMENT_IDS[slot_index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function check_solution() {
+  if (!fragments_belong_to_target_song()) {
+    return RESULT_WRONG_SONG;
+  }
+
+  if (!has_exact_target_fragments()) {
+    return RESULT_WRONG_FRAGMENTS;
+  }
+
+  if (!fragments_are_in_correct_order()) {
+    return RESULT_WRONG_ORDER;
+  }
+
+  return RESULT_SOLVED;
+}
+
+function show_status(message) {
+  update_text(status_text, message);
+  update_to_top(status_text);
+}
+
+function notify_result(result) {
+  if (result_callback !== undefined) {
+    result_callback(result);
+  }
+}
+
+function finish_game(message, result) {
   if (!puzzle_is_active) {
     return undefined;
   }
@@ -523,13 +632,31 @@ function end_game() {
   snap_fragments();
   update_color(submit_button, DISABLED_BUTTON_COLOUR);
   update_color(submit_button_text, [220, 220, 220, 255]);
+  show_status(message);
+  notify_result(result);
 
-  if (check_solution()) {
-    update_text(status_text, "Puzzle Solved!");
-  } else {
-    update_text(status_text, "Incorrect Order.");
+  return undefined;
+}
+
+function handle_submit() {
+  if (!puzzle_is_active) {
+    return undefined;
   }
-  update_to_top(status_text);
+
+  const result = check_solution();
+
+  if (result === RESULT_SOLVED) {
+    finish_game("Puzzle Solved!", RESULT_SOLVED);
+  } else if (result === RESULT_WRONG_SONG) {
+    show_status("Wrong-song fragments detected. Return and choose again.");
+    notify_result(RESULT_WRONG_SONG);
+  } else if (result === RESULT_WRONG_FRAGMENTS) {
+    show_status("Fragments are missing, unexpected, or duplicated.");
+    notify_result(RESULT_WRONG_FRAGMENTS);
+  } else {
+    show_status("Correct fragments, but the order is wrong. Try again.");
+    notify_result(RESULT_WRONG_ORDER);
+  }
 
   return undefined;
 }
@@ -539,7 +666,7 @@ function update() {
   const mouse_pressed_this_frame = mouse_is_down && !mouse_was_down;
   const mouse_released_this_frame = !mouse_is_down && mouse_was_down;
 
-  if (!timer_has_started) {
+  if (puzzle_is_active && !timer_has_started) {
     start_timer();
   }
 
@@ -580,9 +707,46 @@ function update() {
   mouse_was_down = mouse_is_down;
 }
 
-create_slot_positions();
-create_fragments();
-create_submit_button();
-create_ambient_animation();
+// Public level interface. The previous level passes its selected fragment array
+// and an optional callback that receives one of the RESULT_* values above.
+function start_melody_sorting_level(fragment_list, on_result) {
+  received_fragment_list = fragment_list;
+  result_callback = on_result;
+
+  create_slot_positions();
+
+  const input_is_valid = validate_input_fragment_list(fragment_list);
+
+  if (input_is_valid) {
+    create_fragments();
+  } else {
+    puzzle_is_active = false;
+    timer_has_started = true;
+    update_text(timer_text, "Time: --:--");
+  }
+
+  create_submit_button();
+  create_ambient_animation();
+
+  if (!input_is_valid) {
+    update_color(submit_button, DISABLED_BUTTON_COLOUR);
+    update_color(submit_button_text, [220, 220, 220, 255]);
+    show_status("Invalid fragment list received from the previous level.");
+    notify_result(RESULT_INVALID_INPUT);
+  }
+
+  update_loop(update);
+  build_game();
+
+  return undefined;
+}
+
+// Stand-alone demo. In the complete multi-level game, replace this call with:
+// start_melody_sorting_level(selected_fragments, handle_sorting_result);
+// Stand-alone demo. In the complete multi-level game, replace only this call
+// with start_melody_sorting_level(selected_fragments, handle_sorting_result).
+start_melody_sorting_level(DEMO_FRAGMENT_LIST, undefined);
 update_loop(update);
+
+// Source Academy requires build_game to be the final statement.
 build_game();
