@@ -230,6 +230,30 @@ const WALK_SPEED = 3;
 const RUN_SPEED = 9;
 const MAX_HP = 100;
 const MAX_STAMINA = 100;
+const DROP_MIN_DISTANCE = 38;
+const DROP_OFFSETS = [
+  [0, 0],
+  [38, 0],
+  [-38, 0],
+  [0, 38],
+  [0, -38],
+  [38, 38],
+  [38, -38],
+  [-38, 38],
+  [-38, -38],
+  [76, 0],
+  [-76, 0],
+  [0, 76],
+  [0, -76],
+  [76, 38],
+  [76, -38],
+  [-76, 38],
+  [-76, -38],
+  [38, 76],
+  [-38, 76],
+  [38, -76],
+  [-38, -76]
+];
 
 const map = [];
 let reachable_cells = [];
@@ -1039,6 +1063,71 @@ function pick_up_fragment(item) {
   return false;
 }
 
+function drop_position_is_reachable(position) {
+  const row = math_floor(position[1] / TILE);
+  const column = math_floor(position[0] / TILE);
+
+  if (row <= 0
+      || row >= ROWS - 1
+      || column <= 0
+      || column >= COLS - 1
+      || map[row][column] === 1
+      || !reachable_cells[row][column]) {
+    return false;
+  }
+
+  return map[row - 1][column] !== 1
+    || map[row + 1][column] !== 1
+    || map[row][column - 1] !== 1
+    || map[row][column + 1] !== 1;
+}
+
+function drop_position_is_clear(position, dropped_item) {
+  if (!player_can_move(position)
+      || !drop_position_is_reachable(position)) {
+    return false;
+  }
+
+  for (let index = 0;
+       index < array_length(world_fragments);
+       index = index + 1) {
+    const other_item = world_fragments[index];
+
+    if (other_item !== dropped_item && other_item[WORLD_ACTIVE_INDEX]) {
+      const other_position = query_position(
+        other_item[WORLD_OBJECT_INDEX]
+      );
+      const delta_x = position[0] - other_position[0];
+      const delta_y = position[1] - other_position[1];
+
+      if (delta_x * delta_x + delta_y * delta_y
+          < DROP_MIN_DISTANCE * DROP_MIN_DISTANCE) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function find_clear_drop_position(player_position, dropped_item) {
+  for (let index = 0;
+       index < array_length(DROP_OFFSETS);
+       index = index + 1) {
+    const offset = DROP_OFFSETS[index];
+    const candidate = [
+      player_position[0] + offset[0],
+      player_position[1] + offset[1]
+    ];
+
+    if (drop_position_is_clear(candidate, dropped_item)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
 function drop_selected_fragment(position) {
   const fragment_data = inventory[selected_slot];
 
@@ -1053,25 +1142,26 @@ function drop_selected_fragment(position) {
 
     if (item[WORLD_DATA_INDEX][DATA_ID_INDEX]
         === fragment_data[DATA_ID_INDEX]) {
+      const drop_position = find_clear_drop_position(position, item);
+
+      if (drop_position === undefined) {
+        update_text(collection_message_text, "No room to drop.");
+        return false;
+      }
+
       item[WORLD_ACTIVE_INDEX] = true;
-      item[WORLD_ROW_INDEX] = item[WORLD_SPAWN_ROW_INDEX];
-      item[WORLD_COL_INDEX] = item[WORLD_SPAWN_COL_INDEX];
+      item[WORLD_ROW_INDEX] = math_floor(drop_position[1] / TILE);
+      item[WORLD_COL_INDEX] = math_floor(drop_position[0] / TILE);
       item[WORLD_SCALE_INDEX] = 1.8;
       update_scale(item[WORLD_OBJECT_INDEX], [1.8, 1.8]);
-      update_position(
-        item[WORLD_OBJECT_INDEX],
-        [
-          item[WORLD_SPAWN_COL_INDEX] * TILE + TILE / 2,
-          item[WORLD_SPAWN_ROW_INDEX] * TILE + TILE / 2
-        ]
-      );
+      update_position(item[WORLD_OBJECT_INDEX], drop_position);
       remove_from_inventory(selected_slot);
       update_text(collection_message_text, "Dropped.");
-      return undefined;
+      return true;
     }
   }
 
-  return undefined;
+  return false;
 }
 
 function highlight_world_fragments(position) {
