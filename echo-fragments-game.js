@@ -572,14 +572,14 @@ function create_player_and_status() {
 function create_collection_key_hint(key_text, action_text, y, key_width) {
   register_collection_object(
     update_color(
-      create_rectangle(key_width + 4, 28),
+      create_rectangle(key_width + 4, 30),
       [8, 11, 30, 255]
     ),
     [783, y + 2]
   );
   register_collection_object(
     update_color(
-      create_rectangle(key_width, 24),
+      create_rectangle(key_width, 26),
       [72, 47, 118, 255]
     ),
     [783, y]
@@ -603,8 +603,8 @@ function create_collection_key_hint(key_text, action_text, y, key_width) {
 function create_collection_ui() {
   // Right-side control panel.
   register_collection_object(
-    update_color(create_rectangle(138, 720), [18, 22, 52, 245]),
-    [825, 375]
+    update_color(create_rectangle(138, 770), [18, 22, 52, 245]),
+    [825, 400]
   );
   register_collection_object(
     update_color(create_rectangle(126, 4), [198, 74, 230, 255]),
@@ -626,40 +626,40 @@ function create_collection_ui() {
   );
 
   register_collection_object(
-    update_color(create_rectangle(116, 238), [25, 31, 70, 255]),
-    [825, 235]
+    update_color(create_rectangle(116, 250), [25, 31, 70, 255]),
+    [825, 230]
   );
   register_collection_object(
     update_color(create_rectangle(102, 2), [73, 84, 135, 255]),
-    [825, 135]
+    [825, 142]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("MISSION"), [0.7, 0.7]),
       [255, 255, 255, 255]
     ),
-    [825, 116]
+    [825, 122]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("♪"), [3.0, 3.0]),
       [220, 78, 239, 255]
     ),
-    [825, 218]
+    [825, 220]
   );
   collection_progress_text = register_collection_object(
     update_color(
       update_scale(create_text("0 / 8"), [1.22, 1.22]),
       [255, 255, 255, 255]
     ),
-    [825, 305]
+    [825, 308]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("COLLECTED"), [0.58, 0.58]),
       [255, 255, 255, 255]
     ),
-    [825, 334]
+    [825, 338]
   );
 
   register_collection_object(
@@ -667,36 +667,34 @@ function create_collection_ui() {
       update_scale(create_text("CONTROLS"), [0.78, 0.78]),
       [255, 255, 255, 255]
     ),
-    [825, 410]
+    [825, 382]
   );
   register_collection_object(
     update_color(create_rectangle(112, 2), [75, 84, 130, 255]),
-    [825, 430]
+    [825, 404]
   );
 
-  create_collection_key_hint("WASD", "MOVE", 458, 44);
-  create_collection_key_hint("F", "SPRINT", 496, 28);
-  create_collection_key_hint("R", "PREVIEW", 534, 28);
-  create_collection_key_hint("E", "COLLECT", 572, 28);
-  create_collection_key_hint("Q", "DROP", 610, 28);
-  create_collection_key_hint("1-8", "SELECT NOTE", 648, 28);
-  
-  
+  create_collection_key_hint("WASD", "MOVE", 432, 44);
+  create_collection_key_hint("F", "SPRINT", 474, 28);
+  create_collection_key_hint("R", "PREVIEW", 516, 28);
+  create_collection_key_hint("E", "COLLECT", 558, 28);
+  create_collection_key_hint("Q", "DROP", 600, 28);
+  create_collection_key_hint("1-8", "SELECT NOTE", 642, 28);
 
   register_collection_object(
-    update_color(create_rectangle(126, 84), [29, 35, 72, 255]),
-    [825, 720]
+    update_color(create_rectangle(126, 110), [29, 35, 72, 255]),
+    [825, 725]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("STATUS"), [0.74, 0.74]),
       [255, 255, 255, 255]
     ),
-    [825, 690]
+    [825, 688]
   );
   register_collection_object(
     update_color(create_rectangle(108, 1), [75, 84, 130, 255]),
-    [825, 743]
+    [825, 706]
   );
 
   // Bottom inventory panel.
@@ -743,7 +741,7 @@ function create_collection_ui() {
       update_scale(create_text(""), [0.66, 0.66]),
       [255, 255, 255, 255]
     ),
-    [825, 676]
+    [825, 729]
   );
 
   collection_message_text = register_collection_object(
@@ -751,7 +749,7 @@ function create_collection_ui() {
       update_scale(create_text("Find 8 notes."), [0.62, 0.62]),
       [255, 255, 255, 255]
     ),
-    [825, 708]
+    [825, 758]
   );
 }
 
@@ -796,7 +794,7 @@ function update_inventory_ui() {
       update_color(
         inventory_texts[index],
         colour_for_fragment(inventory[index])
-        );
+      );
     }
   }
 
@@ -1043,23 +1041,22 @@ function drop_selected_fragment(position) {
 
     if (item[WORLD_DATA_INDEX][DATA_ID_INDEX]
         === fragment_data[DATA_ID_INDEX]) {
-            item[WORLD_ACTIVE_INDEX] = true;
-            item[WORLD_ROW_INDEX] = item[WORLD_SPAWN_ROW_INDEX];
-            item[WORLD_COL_INDEX] = item[WORLD_SPAWN_COL_INDEX];
-            item[WORLD_SCALE_INDEX] = 1.8;
-            update_scale(item[WORLD_OBJECT_INDEX], [1.8, 1.8]);
-            update_position(
-                item[WORLD_OBJECT_INDEX],
-                [
-                    item[WORLD_SPAWN_COL_INDEX] * TILE + TILE / 2,
-                    item[WORLD_SPAWN_ROW_INDEX] * TILE + TILE / 2
-                    ]
-                    );
-                    remove_from_inventory(selected_slot);
-                    update_text(collection_message_text, "Dropped.");
-                    return undefined;
-            
-        }
+      item[WORLD_ACTIVE_INDEX] = true;
+      item[WORLD_ROW_INDEX] = item[WORLD_SPAWN_ROW_INDEX];
+      item[WORLD_COL_INDEX] = item[WORLD_SPAWN_COL_INDEX];
+      item[WORLD_SCALE_INDEX] = 1.8;
+      update_scale(item[WORLD_OBJECT_INDEX], [1.8, 1.8]);
+      update_position(
+        item[WORLD_OBJECT_INDEX],
+        [
+          item[WORLD_SPAWN_COL_INDEX] * TILE + TILE / 2,
+          item[WORLD_SPAWN_ROW_INDEX] * TILE + TILE / 2
+        ]
+      );
+      remove_from_inventory(selected_slot);
+      update_text(collection_message_text, "Dropped.");
+      return undefined;
+    }
   }
 
   return undefined;
