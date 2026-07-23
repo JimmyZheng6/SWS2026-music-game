@@ -733,7 +733,7 @@ function create_collection_ui() {
       inventory_positions[index]
     );
     inventory_texts[index] = register_collection_object(
-      update_scale(create_text(""), [0.66, 0.66]),
+      update_scale(create_text(""), [0.9, 0.9]),
       inventory_positions[index]
     );
   }
@@ -793,7 +793,10 @@ function update_inventory_ui() {
         inventory_texts[index],
         prefix + "[" + stringify(index + 1) + "] ♪"
       );
-      update_color(inventory_texts[index], [255, 255, 255, 255]);
+      update_color(
+        inventory_texts[index],
+        colour_for_fragment(inventory[index])
+        );
     }
   }
 
