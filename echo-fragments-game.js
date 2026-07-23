@@ -679,21 +679,24 @@ function create_collection_ui() {
   create_collection_key_hint("R", "PREVIEW", 534, 28);
   create_collection_key_hint("E", "COLLECT", 572, 28);
   create_collection_key_hint("Q", "DROP", 610, 28);
+  create_collection_key_hint("1-8", "SELECT NOTE", 648, 28);
+  
+  
 
   register_collection_object(
     update_color(create_rectangle(126, 84), [29, 35, 72, 255]),
-    [825, 680]
+    [825, 720]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("STATUS"), [0.74, 0.74]),
       [255, 255, 255, 255]
     ),
-    [825, 650]
+    [825, 690]
   );
   register_collection_object(
     update_color(create_rectangle(108, 1), [75, 84, 130, 255]),
-    [825, 693]
+    [825, 743]
   );
 
   // Bottom inventory panel.
@@ -898,11 +901,11 @@ function move_player() {
 
   if (input_key_down("f") && stamina > 0) {
     current_speed = RUN_SPEED;
-    stamina = stamina - 0.55;
+    stamina = stamina - 1;
   } else {
     current_speed = WALK_SPEED;
     if (stamina < MAX_STAMINA) {
-      stamina = stamina + 0.25;
+      stamina = stamina + 0.5;
     }
   }
 
@@ -956,7 +959,7 @@ function find_nearby_world_fragment(position) {
       const delta_x = position[0] - item_position[0];
       const delta_y = position[1] - item_position[1];
 
-      if (delta_x * delta_x + delta_y * delta_y < 48 * 48) {
+      if (delta_x * delta_x + delta_y * delta_y < 30 * 30) {
         return item;
       }
     }
@@ -969,7 +972,7 @@ function player_is_near_goal(position) {
   const goal_position = query_position(goal_object);
   const delta_x = position[0] - goal_position[0];
   const delta_y = position[1] - goal_position[1];
-  return delta_x * delta_x + delta_y * delta_y < 55 * 55;
+  return delta_x * delta_x + delta_y * delta_y < 50 * 50;
 }
 
 function stop_collection_audio() {
@@ -1069,7 +1072,7 @@ function highlight_world_fragments(position) {
       const item_position = query_position(item[WORLD_OBJECT_INDEX]);
       const delta_x = position[0] - item_position[0];
       const delta_y = position[1] - item_position[1];
-      const nearby = delta_x * delta_x + delta_y * delta_y < 80 * 80;
+      const nearby = delta_x * delta_x + delta_y * delta_y < 30 * 30;
       let scale = item[WORLD_SCALE_INDEX];
 
       if (nearby && scale < 2.35) {
