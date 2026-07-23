@@ -129,14 +129,14 @@ const FIXED_LABEL_INDEX = 1;
 const FIXED_DATA_INDEX = 2;
 
 const FRAGMENT_COLOURS = [
-  [231, 76, 60, 255],
-  [243, 156, 18, 255],
-  [241, 196, 15, 255],
-  [46, 204, 113, 255],
-  [52, 152, 219, 255],
-  [63, 81, 181, 255],
-  [155, 89, 182, 255],
-  [233, 30, 99, 255]
+  [211, 102, 96, 255],
+  [214, 145, 68, 255],
+  [215, 181, 70, 255],
+  [77, 177, 124, 255],
+  [74, 151, 197, 255],
+  [90, 110, 191, 255],
+  [155, 98, 182, 255],
+  [202, 81, 130, 255]
 ];
 
 let current_scene = SCENE_COLLECTION;
@@ -256,8 +256,8 @@ let selected_slot = 0;
 let hp = MAX_HP;
 let stamina = MAX_STAMINA;
 let current_speed = WALK_SPEED;
-let hp_back = undefined;
 let sprint_locked = false;
+let hp_back = undefined;
 let hp_front = undefined;
 let stamina_back = undefined;
 let stamina_front = undefined;
@@ -573,14 +573,14 @@ function create_player_and_status() {
 function create_collection_key_hint(key_text, action_text, y, key_width) {
   register_collection_object(
     update_color(
-      create_rectangle(key_width + 4, 28),
+      create_rectangle(key_width + 4, 30),
       [8, 11, 30, 255]
     ),
     [783, y + 2]
   );
   register_collection_object(
     update_color(
-      create_rectangle(key_width, 24),
+      create_rectangle(key_width, 26),
       [72, 47, 118, 255]
     ),
     [783, y]
@@ -604,8 +604,8 @@ function create_collection_key_hint(key_text, action_text, y, key_width) {
 function create_collection_ui() {
   // Right-side control panel.
   register_collection_object(
-    update_color(create_rectangle(138, 720), [18, 22, 52, 245]),
-    [825, 375]
+    update_color(create_rectangle(138, 770), [18, 22, 52, 245]),
+    [825, 400]
   );
   register_collection_object(
     update_color(create_rectangle(126, 4), [198, 74, 230, 255]),
@@ -627,40 +627,40 @@ function create_collection_ui() {
   );
 
   register_collection_object(
-    update_color(create_rectangle(116, 238), [25, 31, 70, 255]),
-    [825, 235]
+    update_color(create_rectangle(116, 250), [25, 31, 70, 255]),
+    [825, 230]
   );
   register_collection_object(
     update_color(create_rectangle(102, 2), [73, 84, 135, 255]),
-    [825, 135]
+    [825, 142]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("MISSION"), [0.7, 0.7]),
       [255, 255, 255, 255]
     ),
-    [825, 116]
+    [825, 122]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("♪"), [3.0, 3.0]),
       [220, 78, 239, 255]
     ),
-    [825, 218]
+    [825, 220]
   );
   collection_progress_text = register_collection_object(
     update_color(
       update_scale(create_text("0 / 8"), [1.22, 1.22]),
       [255, 255, 255, 255]
     ),
-    [825, 305]
+    [825, 308]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("COLLECTED"), [0.58, 0.58]),
       [255, 255, 255, 255]
     ),
-    [825, 334]
+    [825, 338]
   );
 
   register_collection_object(
@@ -668,36 +668,34 @@ function create_collection_ui() {
       update_scale(create_text("CONTROLS"), [0.78, 0.78]),
       [255, 255, 255, 255]
     ),
-    [825, 410]
+    [825, 382]
   );
   register_collection_object(
     update_color(create_rectangle(112, 2), [75, 84, 130, 255]),
-    [825, 430]
+    [825, 404]
   );
 
-  create_collection_key_hint("WASD", "MOVE", 458, 44);
-  create_collection_key_hint("F", "SPRINT", 496, 28);
-  create_collection_key_hint("R", "PREVIEW", 534, 28);
-  create_collection_key_hint("E", "COLLECT", 572, 28);
-  create_collection_key_hint("Q", "DROP", 610, 28);
-  create_collection_key_hint("1-8", "SELECT NOTE", 648, 28);
-  
-  
+  create_collection_key_hint("WASD", "MOVE", 432, 44);
+  create_collection_key_hint("F", "SPRINT", 474, 28);
+  create_collection_key_hint("R", "PREVIEW", 516, 28);
+  create_collection_key_hint("E", "COLLECT", 558, 28);
+  create_collection_key_hint("Q", "DROP", 600, 28);
+  create_collection_key_hint("1-8", "SELECT NOTE", 642, 28);
 
   register_collection_object(
-    update_color(create_rectangle(126, 84), [29, 35, 72, 255]),
-    [825, 720]
+    update_color(create_rectangle(126, 110), [29, 35, 72, 255]),
+    [825, 725]
   );
   register_collection_object(
     update_color(
       update_scale(create_text("STATUS"), [0.74, 0.74]),
       [255, 255, 255, 255]
     ),
-    [825, 690]
+    [825, 688]
   );
   register_collection_object(
     update_color(create_rectangle(108, 1), [75, 84, 130, 255]),
-    [825, 743]
+    [825, 706]
   );
 
   // Bottom inventory panel.
@@ -744,7 +742,7 @@ function create_collection_ui() {
       update_scale(create_text(""), [0.66, 0.66]),
       [255, 255, 255, 255]
     ),
-    [825, 676]
+    [825, 729]
   );
 
   collection_message_text = register_collection_object(
@@ -752,7 +750,7 @@ function create_collection_ui() {
       update_scale(create_text("Find 8 notes."), [0.62, 0.62]),
       [255, 255, 255, 255]
     ),
-    [825, 708]
+    [825, 758]
   );
 }
 
@@ -797,7 +795,7 @@ function update_inventory_ui() {
       update_color(
         inventory_texts[index],
         colour_for_fragment(inventory[index])
-        );
+      );
     }
   }
 
@@ -902,29 +900,27 @@ function move_player() {
   const position = query_position(player);
   let x = position[0];
   let y = position[1];
+  const sprint_key_down = input_key_down("f");
 
-  if (!input_key_down("f")) {
-  sprint_locked = false;
-      
+  if (!sprint_key_down) {
+    sprint_locked = false;
+  } else if (stamina <= 0) {
+    sprint_locked = true;
   }
-  if (input_key_down("f")
-    && !sprint_locked
-    && stamina > 0) {
-        current_speed = RUN_SPEED;
-        stamina = stamina - 1.5;
-        if (stamina <= 0) {
-            stamina = 0;
-            sprint_locked = true;
-            
-        }
-    } else {
-        current_speed = WALK_SPEED;
-        if (stamina < MAX_STAMINA) {
-            stamina = stamina + 0.5;
-            
-        }
-        
+
+  if (sprint_key_down && !sprint_locked && stamina > 0) {
+    current_speed = RUN_SPEED;
+    stamina = stamina - 1.5;
+    if (stamina <= 0) {
+      stamina = 0;
+      sprint_locked = true;
     }
+  } else {
+    current_speed = WALK_SPEED;
+    if (stamina < MAX_STAMINA) {
+      stamina = stamina + 0.5;
+    }
+  }
 
   if (stamina < 0) {
     stamina = 0;
@@ -1057,23 +1053,22 @@ function drop_selected_fragment(position) {
 
     if (item[WORLD_DATA_INDEX][DATA_ID_INDEX]
         === fragment_data[DATA_ID_INDEX]) {
-            item[WORLD_ACTIVE_INDEX] = true;
-            item[WORLD_ROW_INDEX] = item[WORLD_SPAWN_ROW_INDEX];
-            item[WORLD_COL_INDEX] = item[WORLD_SPAWN_COL_INDEX];
-            item[WORLD_SCALE_INDEX] = 1.8;
-            update_scale(item[WORLD_OBJECT_INDEX], [1.8, 1.8]);
-            update_position(
-                item[WORLD_OBJECT_INDEX],
-                [
-                    item[WORLD_SPAWN_COL_INDEX] * TILE + TILE / 2,
-                    item[WORLD_SPAWN_ROW_INDEX] * TILE + TILE / 2
-                    ]
-                    );
-                    remove_from_inventory(selected_slot);
-                    update_text(collection_message_text, "Dropped.");
-                    return undefined;
-            
-        }
+      item[WORLD_ACTIVE_INDEX] = true;
+      item[WORLD_ROW_INDEX] = item[WORLD_SPAWN_ROW_INDEX];
+      item[WORLD_COL_INDEX] = item[WORLD_SPAWN_COL_INDEX];
+      item[WORLD_SCALE_INDEX] = 1.8;
+      update_scale(item[WORLD_OBJECT_INDEX], [1.8, 1.8]);
+      update_position(
+        item[WORLD_OBJECT_INDEX],
+        [
+          item[WORLD_SPAWN_COL_INDEX] * TILE + TILE / 2,
+          item[WORLD_SPAWN_ROW_INDEX] * TILE + TILE / 2
+        ]
+      );
+      remove_from_inventory(selected_slot);
+      update_text(collection_message_text, "Dropped.");
+      return undefined;
+    }
   }
 
   return undefined;
@@ -1184,10 +1179,29 @@ const SORT_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const SORT_INITIAL_SLOTS = [5, 0, 7, 2, 6, 1, 4, 3];
 const SORT_TOTAL_SEQUENCE_COUNT = 10;
 const SORTABLE_SEQUENCE_POSITIONS = [1, 2, 3, 4, 5, 6, 7, 9];
+const SORT_LABEL_BASE_SCALE = 1.35;
+const SORT_DRAG_SCALE = 1.14;
+const SORT_DRAG_FOLLOW = 0.34;
+const SORT_SETTLE_FOLLOW = 0.22;
+
+// Muted colours keep the records distinct without overpowering the scene.
+const SORT_BACKGROUND_COLOUR = [10, 14, 42, 255];
+const SORT_MAIN_PANEL_COLOUR = [24, 34, 68, 238];
+const SORT_ANIMATION_PANEL_COLOUR = [18, 27, 54, 238];
+const SORT_CENTRE_COLOUR = [22, 28, 48, 255];
+const SORT_PREVIEW_COLOUR = [54, 113, 153, 255];
+const SORT_PREVIEW_ACTIVE_COLOUR = [181, 77, 79, 255];
+const SORT_CONTROL_COLOUR = [54, 82, 112, 255];
+const SORT_FIXED_RING_COLOUR = [214, 175, 72, 255];
+const SORT_FIXED_CENTRE_COLOUR = [32, 34, 55, 255];
+const SORT_FIXED_TEXT_COLOUR = [250, 221, 132, 255];
+const SORT_FIXED_BUTTON_COLOUR = [174, 121, 48, 255];
+const SORT_SHADOW_COLOUR = [6, 9, 22, 100];
 
 // sorting fragment item:
 // [label, slot, shape, label_text, button, button_text,
-//  audio, centre, fragment_id, song_id, fragment_data, idle_button_colour]
+//  audio, centre, fragment_id, song_id, fragment_data, idle_button_colour,
+//  shadow, animation_scale, animation_bounce]
 const SORT_LABEL_INDEX = 0;
 const SORT_SLOT_INDEX = 1;
 const SORT_SHAPE_INDEX = 2;
@@ -1200,6 +1214,9 @@ const SORT_ID_INDEX = 8;
 const SORT_SONG_ID_INDEX = 9;
 const SORT_DATA_INDEX = 10;
 const SORT_BUTTON_IDLE_COLOUR_INDEX = 11;
+const SORT_SHADOW_INDEX = 12;
+const SORT_ANIMATION_SCALE_INDEX = 13;
+const SORT_ANIMATION_BOUNCE_INDEX = 14;
 
 let sorting_fragments = [];
 let sorting_fixed_fragments = [];
@@ -1207,7 +1224,14 @@ let sorting_slot_positions = [];
 let sorting_sequence_positions = [];
 let sorting_equalizer_bars = [];
 let sorting_floating_notes = [];
+let sorting_wave_dots = [];
+let sorting_drifting_sparks = [];
+let sorting_spaceship_pixels = [];
+let sorting_spaceship_trail = [];
+let sorting_pixel_planets = [];
+let sorting_planet_moons = [];
 let sorting_dragged_fragment = undefined;
+let sorting_drag_pointer_offset = [0, 0];
 let sorting_playing_fragment = undefined;
 let sorting_active = false;
 let sorting_timer_started_at = 0;
@@ -1281,7 +1305,7 @@ function create_sorting_background() {
   register_sorting_object(
     update_color(
       create_rectangle(CANVAS_WIDTH, CANVAS_HEIGHT),
-      [6, 8, 35, 255]
+      SORT_BACKGROUND_COLOUR
     ),
     [CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2]
   );
@@ -1297,14 +1321,14 @@ function create_sorting_background() {
       pixel_x,
       pixel_y,
       pixel_size,
-      [18, 25, 80 + math_floor(math_random() * 90), 80]
+      [31, 41, 92 + math_floor(math_random() * 58), 78]
     );
   }
 
   const star_colours = [
-    [255, 255, 255, 235],
-    [226, 0, 255, 225],
-    [99, 72, 255, 210]
+    [236, 239, 246, 225],
+    [192, 91, 208, 200],
+    [104, 111, 218, 195]
   ];
 
   for (let index = 0; index < 70; index = index + 1) {
@@ -1336,10 +1360,10 @@ function create_sorting_background() {
 
   for (let index = 0; index < 28; index = index + 1) {
     const trail_colour = index < 7
-      ? [255, 255, 255, 245]
+      ? [236, 239, 246, 225]
       : index < 18
-      ? [235, 0, 255, 225]
-      : [83, 55, 210, 150];
+      ? [192, 91, 208, 190]
+      : [92, 101, 202, 145];
     create_sort_pixel(
       88 + index * 5,
       690 - index * 1.15 + (math_random() - 0.5) * 12,
@@ -1349,11 +1373,11 @@ function create_sorting_background() {
   }
 
   register_sorting_object(
-    update_color(create_rectangle(860, 275), [21, 30, 58, 225]),
+    update_color(create_rectangle(840, 190), SORT_MAIN_PANEL_COLOUR),
     [CANVAS_WIDTH / 2, 305]
   );
   register_sorting_object(
-    update_color(create_rectangle(820, 155), [15, 23, 46, 225]),
+    update_color(create_rectangle(820, 155), SORT_ANIMATION_PANEL_COLOUR),
     [CANVAS_WIDTH / 2, 700]
   );
 }
@@ -1435,14 +1459,14 @@ function create_fixed_sorting_fragments() {
     const disc = register_sorting_object(
       update_color(
         create_circle(SORT_FRAGMENT_RADIUS),
-        [246, 192, 67, 255]
+        SORT_FIXED_RING_COLOUR
       ),
       position
     );
     const centre = register_sorting_object(
       update_color(
         create_circle(SORT_FRAGMENT_RADIUS - 5),
-        [30, 27, 60, 255]
+        SORT_FIXED_CENTRE_COLOUR
       ),
       position
     );
@@ -1452,7 +1476,7 @@ function create_fixed_sorting_fragments() {
           create_text("FIXED"),
           [0.72, 0.72]
         ),
-        [255, 235, 120, 255]
+        SORT_FIXED_TEXT_COLOUR
       ),
       position
     );
@@ -1463,7 +1487,7 @@ function create_fixed_sorting_fragments() {
     const button = register_sorting_object(
       update_color(
         create_rectangle(SORT_PREVIEW_WIDTH, SORT_PREVIEW_HEIGHT),
-        [181, 127, 35, 255]
+        SORT_FIXED_BUTTON_COLOUR
       ),
       button_position
     );
@@ -1487,18 +1511,31 @@ function create_fixed_sorting_fragments() {
       data[DATA_ID_INDEX],
       data[DATA_SONG_ID_INDEX],
       data,
-      [181, 127, 35, 255]
+      SORT_FIXED_BUTTON_COLOUR
     ];
   }
 }
 
 function move_sorting_fragment(fragment, position) {
   const button_position = [position[0], position[1] + SORT_PREVIEW_OFFSET];
+  const shadow_position = [position[0] + 4, position[1] + 8];
+  update_position(fragment[SORT_SHADOW_INDEX], shadow_position);
   update_position(fragment[SORT_SHAPE_INDEX], position);
   update_position(fragment[SORT_CENTRE_INDEX], position);
   update_position(fragment[SORT_LABEL_TEXT_INDEX], position);
   update_position(fragment[SORT_BUTTON_INDEX], button_position);
   update_position(fragment[SORT_BUTTON_TEXT_INDEX], button_position);
+}
+
+function scale_sorting_fragment(fragment, scale) {
+  fragment[SORT_ANIMATION_SCALE_INDEX] = scale;
+  update_scale(fragment[SORT_SHADOW_INDEX], [scale * 1.08, scale * 0.82]);
+  update_scale(fragment[SORT_SHAPE_INDEX], [scale, scale]);
+  update_scale(fragment[SORT_CENTRE_INDEX], [scale, scale]);
+  update_scale(
+    fragment[SORT_LABEL_TEXT_INDEX],
+    [SORT_LABEL_BASE_SCALE * scale, SORT_LABEL_BASE_SCALE * scale]
+  );
 }
 
 function move_sorting_fragment_to_slot(fragment) {
@@ -1509,6 +1546,7 @@ function move_sorting_fragment_to_slot(fragment) {
 }
 
 function bring_sorting_fragment_to_front(fragment) {
+  update_to_top(fragment[SORT_SHADOW_INDEX]);
   update_to_top(fragment[SORT_SHAPE_INDEX]);
   update_to_top(fragment[SORT_CENTRE_INDEX]);
   update_to_top(fragment[SORT_LABEL_TEXT_INDEX]);
@@ -1520,17 +1558,30 @@ function create_sorting_fragments() {
   sorting_fragments = [];
 
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    const shadow = register_sorting_object(
+      update_color(
+        update_scale(
+          create_circle(SORT_FRAGMENT_RADIUS),
+          [1.08, 0.82]
+        ),
+        SORT_SHADOW_COLOUR
+      ),
+      [0, 0]
+    );
     const disc = register_sorting_object(
       update_color(create_circle(SORT_FRAGMENT_RADIUS), FRAGMENT_COLOURS[index]),
       [0, 0]
     );
     const centre = register_sorting_object(
-      update_color(create_circle(13), [17, 24, 45, 255]),
+      update_color(create_circle(13), SORT_CENTRE_COLOUR),
       [0, 0]
     );
     const label_text = register_sorting_object(
       update_color(
-        update_scale(create_text(SORT_LABELS[index]), [1.35, 1.35]),
+        update_scale(
+          create_text(SORT_LABELS[index]),
+          [SORT_LABEL_BASE_SCALE, SORT_LABEL_BASE_SCALE]
+        ),
         [255, 255, 255, 255]
       ),
       [0, 0]
@@ -1538,7 +1589,7 @@ function create_sorting_fragments() {
     const button = register_sorting_object(
       update_color(
         create_rectangle(SORT_PREVIEW_WIDTH, SORT_PREVIEW_HEIGHT),
-        [41, 128, 185, 255]
+        SORT_PREVIEW_COLOUR
       ),
       [0, 0]
     );
@@ -1562,7 +1613,10 @@ function create_sorting_fragments() {
       "",
       "",
       "",
-      [41, 128, 185, 255]
+      SORT_PREVIEW_COLOUR,
+      shadow,
+      1,
+      0
     ];
 
     sorting_fragments[index] = fragment;
@@ -1587,6 +1641,8 @@ function configure_sorting_fragments(fragment_list) {
       fragment[SORT_BUTTON_INDEX],
       fragment[SORT_BUTTON_IDLE_COLOUR_INDEX]
     );
+    fragment[SORT_ANIMATION_BOUNCE_INDEX] = 0;
+    scale_sorting_fragment(fragment, 1);
     move_sorting_fragment_to_slot(fragment);
   }
 }
@@ -1605,7 +1661,7 @@ function label_for_fragment_id(fragment_id) {
 
 function create_sorting_controls() {
   sorting_back_button = register_sorting_object(
-    update_color(create_rectangle(120, 42), [76, 86, 106, 255]),
+    update_color(create_rectangle(120, 42), [72, 79, 96, 255]),
     [82, 62]
   );
   sorting_back_text = register_sorting_object(
@@ -1613,13 +1669,161 @@ function create_sorting_controls() {
     [82, 62]
   );
   sorting_submit_button = register_sorting_object(
-    update_color(create_rectangle(160, 48), [52, 73, 94, 255]),
+    update_color(create_rectangle(160, 48), SORT_CONTROL_COLOUR),
     [CANVAS_WIDTH / 2, 530]
   );
   sorting_submit_text = register_sorting_object(
     update_color(create_text("Submit"), [255, 255, 255, 255]),
     [CANVAS_WIDTH / 2, 530]
   );
+}
+
+function add_sorting_spaceship_pixel(grid_x, grid_y, colour) {
+  const pixel_size = 5;
+  const pixel = register_sorting_object(
+    update_color(create_rectangle(pixel_size, pixel_size), colour),
+    [-100, -100]
+  );
+  sorting_spaceship_pixels[
+    array_length(sorting_spaceship_pixels)
+  ] = [pixel, grid_x * pixel_size, grid_y * pixel_size];
+}
+
+function create_sorting_pixel_spaceship() {
+  const body_colour = [126, 139, 213, 255];
+  const wing_colour = [96, 84, 173, 255];
+  const glass_colour = [102, 211, 221, 255];
+  const nose_colour = [229, 232, 245, 255];
+  const flame_colour = [226, 118, 58, 255];
+  const flame_light_colour = [246, 193, 72, 255];
+  sorting_spaceship_pixels = [];
+  sorting_spaceship_trail = [];
+
+  add_sorting_spaceship_pixel(-5, 0, flame_light_colour);
+  add_sorting_spaceship_pixel(-4, -1, flame_colour);
+  add_sorting_spaceship_pixel(-4, 0, flame_colour);
+  add_sorting_spaceship_pixel(-4, 1, flame_colour);
+
+  for (let grid_x = -2; grid_x <= 1; grid_x = grid_x + 1) {
+    add_sorting_spaceship_pixel(grid_x, -2, wing_colour);
+    add_sorting_spaceship_pixel(grid_x, 2, wing_colour);
+  }
+  add_sorting_spaceship_pixel(-1, -3, wing_colour);
+  add_sorting_spaceship_pixel(-1, 3, wing_colour);
+  add_sorting_spaceship_pixel(-3, -2, wing_colour);
+  add_sorting_spaceship_pixel(-3, 2, wing_colour);
+
+  for (let grid_x = -3; grid_x <= 3; grid_x = grid_x + 1) {
+    for (let grid_y = -1; grid_y <= 1; grid_y = grid_y + 1) {
+      add_sorting_spaceship_pixel(grid_x, grid_y, body_colour);
+    }
+  }
+
+  add_sorting_spaceship_pixel(1, -1, glass_colour);
+  add_sorting_spaceship_pixel(2, -1, glass_colour);
+  add_sorting_spaceship_pixel(4, 0, nose_colour);
+
+  for (let index = 0; index < 5; index = index + 1) {
+    const colour = index % 2 === 0
+      ? flame_colour
+      : flame_light_colour;
+    const trail = register_sorting_object(
+      update_color(create_rectangle(4, 4), colour),
+      [-100, -100]
+    );
+    sorting_spaceship_trail[index] = trail;
+  }
+}
+
+function add_sorting_planet_pixel(pixel_list, x, y, size, colour) {
+  const pixel = register_sorting_object(
+    update_color(create_rectangle(size, size), colour),
+    [x, y]
+  );
+  pixel_list[array_length(pixel_list)] = [pixel, x, y];
+}
+
+function create_sorting_pixel_planet(
+  centre_x,
+  centre_y,
+  base_colour,
+  patch_colour,
+  light_colour,
+  ring_colour,
+  phase,
+  pixel_size
+) {
+  const pixels = [];
+
+  if (ring_colour !== undefined) {
+    for (let index = -5; index <= 5; index = index + 1) {
+      const ring_y = index < -2 ? -7 : index > 2 ? 7 : 0;
+      add_sorting_planet_pixel(
+        pixels,
+        index * pixel_size,
+        ring_y,
+        pixel_size,
+        ring_colour
+      );
+    }
+  }
+
+  const row_widths = [3, 5, 7, 7, 7, 5, 3];
+  for (let row = 0; row < 7; row = row + 1) {
+    const width = row_widths[row];
+    for (let column = 0; column < width; column = column + 1) {
+      const offset_x = (column - (width - 1) / 2) * pixel_size;
+      const offset_y = (row - 3) * pixel_size;
+      const pattern = (row * 5 + column + math_floor(phase * 3)) % 7;
+      const colour = row < 2 && column === 0
+        ? light_colour
+        : pattern < 2
+        ? patch_colour
+        : base_colour;
+      add_sorting_planet_pixel(
+        pixels,
+        offset_x,
+        offset_y,
+        pixel_size,
+        colour
+      );
+    }
+  }
+
+  const planet_state = [
+    pixels,
+    centre_x,
+    centre_y,
+    phase,
+    centre_x,
+    centre_y
+  ];
+  for (let index = 0; index < array_length(pixels); index = index + 1) {
+    update_position(
+      pixels[index][0],
+      [centre_x + pixels[index][1], centre_y + pixels[index][2]]
+    );
+  }
+  sorting_pixel_planets[
+    array_length(sorting_pixel_planets)
+  ] = planet_state;
+
+  const moon = register_sorting_object(
+    update_color(
+      create_rectangle(pixel_size < 6 ? 4 : 6, pixel_size < 6 ? 4 : 6),
+      light_colour
+    ),
+    [centre_x + pixel_size * 6, centre_y]
+  );
+  sorting_planet_moons[
+    array_length(sorting_planet_moons)
+  ] = [
+    moon,
+    planet_state,
+    phase,
+    pixel_size * 6,
+    pixel_size * 2.5
+  ];
 }
 
 function create_sorting_animation() {
@@ -1632,6 +1836,61 @@ function create_sorting_animation() {
   const first_x = (CANVAS_WIDTH - total_width) / 2 + bar_width / 2;
   sorting_equalizer_bars = [];
   sorting_floating_notes = [];
+  sorting_wave_dots = [];
+  sorting_drifting_sparks = [];
+  sorting_pixel_planets = [];
+  sorting_planet_moons = [];
+  create_sorting_pixel_spaceship();
+  create_sorting_pixel_planet(
+    112,
+    520,
+    [63, 139, 174, 255],
+    [75, 172, 116, 255],
+    [156, 225, 218, 255],
+    undefined,
+    0.8,
+    7
+  );
+  create_sorting_pixel_planet(
+    788,
+    525,
+    [164, 83, 119, 255],
+    [214, 132, 69, 255],
+    [244, 196, 105, 255],
+    [218, 164, 74, 255],
+    2.4,
+    7
+  );
+  create_sorting_pixel_planet(
+    205,
+    458,
+    [91, 137, 190, 255],
+    [128, 183, 215, 255],
+    [211, 235, 245, 255],
+    undefined,
+    1.5,
+    5
+  );
+  create_sorting_pixel_planet(
+    695,
+    468,
+    [112, 82, 164, 255],
+    [175, 88, 165, 255],
+    [224, 154, 207, 255],
+    undefined,
+    3.2,
+    5
+  );
+  create_sorting_pixel_planet(
+    820,
+    585,
+    [60, 137, 128, 255],
+    [104, 177, 108, 255],
+    [180, 224, 146, 255],
+    [139, 190, 102, 255],
+    4.6,
+    4
+  );
 
   for (let index = 0; index < bar_count; index = index + 1) {
     const bar = register_sorting_object(
@@ -1660,6 +1919,53 @@ function create_sorting_animation() {
       note_positions[index][0],
       note_positions[index][1],
       index * 1.7
+    ];
+  }
+
+  // A slim animated waveform fills the space above the equalizer panel.
+  const wave_dot_count = 29;
+  const wave_first_x = 170;
+  const wave_gap = 20;
+
+  for (let index = 0; index < wave_dot_count; index = index + 1) {
+    const colour = FRAGMENT_COLOURS[index % FRAGMENT_COUNT];
+    const dot = register_sorting_object(
+      update_color(
+        create_circle(index % 3 === 0 ? 3 : 2),
+        [colour[0], colour[1], colour[2], 175]
+      ),
+      [wave_first_x + index * wave_gap, 590]
+    );
+    sorting_wave_dots[index] = [
+      dot,
+      wave_first_x + index * wave_gap,
+      590,
+      index * 0.48
+    ];
+  }
+
+  // Side sparks add motion without covering the status or Submit button.
+  for (let index = 0; index < 10; index = index + 1) {
+    const on_left = index % 2 === 0;
+    const spark_x = on_left
+      ? 75 + math_random() * 175
+      : 650 + math_random() * 175;
+    const spark_y = 425 + math_random() * 145;
+    const colour = FRAGMENT_COLOURS[(index + 3) % FRAGMENT_COUNT];
+    const spark_size = 3 + index % 3;
+    const spark = register_sorting_object(
+      update_color(
+        create_rectangle(spark_size, spark_size),
+        [colour[0], colour[1], colour[2], 125]
+      ),
+      [spark_x, spark_y]
+    );
+    sorting_drifting_sparks[index] = [
+      spark,
+      spark_x,
+      spark_y,
+      index * 0.83,
+      5 + index % 4
     ];
   }
 }
@@ -1700,6 +2006,112 @@ function animate_sorting_background() {
       ]
     );
     update_scale(state[0], [scale, scale]);
+  }
+
+  const spaceship_x = -90 + (time * 64) % 1080;
+  const spaceship_y = 438 + 8 * math_sin(time * 1.35);
+
+  for (let index = 0;
+       index < array_length(sorting_spaceship_pixels);
+       index = index + 1) {
+    const state = sorting_spaceship_pixels[index];
+    update_position(
+      state[0],
+      [spaceship_x + state[1], spaceship_y + state[2]]
+    );
+  }
+
+  for (let index = 0;
+       index < array_length(sorting_spaceship_trail);
+       index = index + 1) {
+    const flicker = 0.65
+      + 0.35 * (1 + math_sin(time * 8 + index * 1.4)) / 2;
+    update_position(
+      sorting_spaceship_trail[index],
+      [
+        spaceship_x - 37 - index * 13,
+        spaceship_y + 5 * math_sin(time * 3 + index)
+      ]
+    );
+    update_scale(
+      sorting_spaceship_trail[index],
+      [flicker, flicker]
+    );
+  }
+
+  for (let index = 0;
+       index < array_length(sorting_pixel_planets);
+       index = index + 1) {
+    const planet = sorting_pixel_planets[index];
+    const phase = planet[3];
+    const planet_x = planet[1] + 4 * math_sin(time * 0.34 + phase);
+    const planet_y = planet[2] + 6 * math_sin(time * 0.58 + phase);
+    planet[4] = planet_x;
+    planet[5] = planet_y;
+
+    for (let pixel_index = 0;
+         pixel_index < array_length(planet[0]);
+         pixel_index = pixel_index + 1) {
+      const pixel = planet[0][pixel_index];
+      update_position(
+        pixel[0],
+        [planet_x + pixel[1], planet_y + pixel[2]]
+      );
+    }
+  }
+
+  for (let index = 0;
+       index < array_length(sorting_planet_moons);
+       index = index + 1) {
+    const moon = sorting_planet_moons[index];
+    const planet = moon[1];
+    const orbit = time * 0.62 + moon[2];
+    const pulse = 0.76
+      + 0.24 * (1 + math_sin(time * 2 + moon[2])) / 2;
+    update_position(
+      moon[0],
+      [
+        planet[4] + moon[3] * math_sin(orbit),
+        planet[5] + moon[4] * math_sin(orbit + 1.57)
+      ]
+    );
+    update_scale(moon[0], [pulse, pulse]);
+  }
+
+  for (let index = 0;
+       index < array_length(sorting_wave_dots);
+       index = index + 1) {
+    const state = sorting_wave_dots[index];
+    const phase = state[3];
+    const wave_height = 4 + activity * 5;
+    const pulse = 0.72
+      + 0.26 * (1 + math_sin(time * 3.1 + phase)) / 2;
+    update_position(
+      state[0],
+      [
+        state[1] + 2 * math_sin(time * 0.75 + phase),
+        state[2] + wave_height * math_sin(time * 2.25 + phase)
+      ]
+    );
+    update_scale(state[0], [pulse, pulse]);
+  }
+
+  for (let index = 0;
+       index < array_length(sorting_drifting_sparks);
+       index = index + 1) {
+    const state = sorting_drifting_sparks[index];
+    const phase = state[3];
+    const distance = state[4];
+    const pulse = 0.58
+      + 0.42 * (1 + math_sin(time * 1.8 + phase)) / 2;
+    update_position(
+      state[0],
+      [
+        state[1] + distance * math_sin(time * 0.55 + phase),
+        state[2] + 10 * math_sin(time * 0.72 + phase + 1.4)
+      ]
+    );
+    update_scale(state[0], [pulse, pulse]);
   }
 }
 
@@ -1779,8 +2191,67 @@ function toggle_sorting_audio(fragment) {
   play_audio(fragment[SORT_AUDIO_INDEX]);
   sorting_playing_fragment = fragment;
   update_text(fragment[SORT_BUTTON_TEXT_INDEX], "Stop");
-  update_color(fragment[SORT_BUTTON_INDEX], [192, 57, 43, 255]);
+  update_color(
+    fragment[SORT_BUTTON_INDEX],
+    SORT_PREVIEW_ACTIVE_COLOUR
+  );
   return undefined;
+}
+
+function animate_sorting_fragments() {
+  for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    const fragment = sorting_fragments[index];
+    const dragging = fragment === sorting_dragged_fragment;
+    let target_position = sorting_slot_positions[
+      fragment[SORT_SLOT_INDEX]
+    ];
+    let follow = SORT_SETTLE_FOLLOW;
+
+    if (dragging) {
+      const pointer = query_pointer_position();
+      target_position = [
+        pointer[0] + sorting_drag_pointer_offset[0],
+        pointer[1] + sorting_drag_pointer_offset[1]
+      ];
+      follow = SORT_DRAG_FOLLOW;
+    }
+
+    const current_position = query_position(fragment[SORT_SHAPE_INDEX]);
+    const delta_x = target_position[0] - current_position[0];
+    const delta_y = target_position[1] - current_position[1];
+    const close_to_target = delta_x * delta_x + delta_y * delta_y < 0.25;
+    const next_position = close_to_target
+      ? target_position
+      : [
+          current_position[0] + delta_x * follow,
+          current_position[1] + delta_y * follow
+        ];
+
+    move_sorting_fragment(fragment, next_position);
+
+    let scale = fragment[SORT_ANIMATION_SCALE_INDEX];
+    let bounce = fragment[SORT_ANIMATION_BOUNCE_INDEX];
+
+    if (dragging) {
+      scale = scale + (SORT_DRAG_SCALE - scale) * 0.28;
+    } else if (bounce !== 0) {
+      scale = 1 + bounce;
+      bounce = bounce * -0.55;
+      fragment[SORT_ANIMATION_BOUNCE_INDEX] =
+        bounce * bounce < 0.000025 ? 0 : bounce;
+    } else {
+      scale = scale + (1 - scale) * 0.24;
+      if ((1 - scale) * (1 - scale) < 0.000025) {
+        scale = 1;
+      }
+    }
+
+    scale_sorting_fragment(fragment, scale);
+
+    if (dragging) {
+      bring_sorting_fragment_to_front(fragment);
+    }
+  }
 }
 
 function begin_sorting_drag() {
@@ -1790,6 +2261,13 @@ function begin_sorting_drag() {
         || pointer_over_gameobject(fragment[SORT_CENTRE_INDEX])
         || pointer_over_gameobject(fragment[SORT_LABEL_TEXT_INDEX])) {
       sorting_dragged_fragment = fragment;
+      const pointer = query_pointer_position();
+      const fragment_position = query_position(fragment[SORT_SHAPE_INDEX]);
+      sorting_drag_pointer_offset = [
+        fragment_position[0] - pointer[0],
+        fragment_position[1] - pointer[1]
+      ];
+      fragment[SORT_ANIMATION_BOUNCE_INDEX] = 0;
       bring_sorting_fragment_to_front(fragment);
       return undefined;
     }
@@ -1797,37 +2275,42 @@ function begin_sorting_drag() {
 }
 
 function drag_sorting_fragment() {
-  move_sorting_fragment(
-    sorting_dragged_fragment,
-    query_pointer_position()
-  );
   bring_sorting_fragment_to_front(sorting_dragged_fragment);
 }
 
 function release_sorting_fragment() {
   let overlapped = undefined;
+  const pointer = query_pointer_position();
+  const drop_position = [
+    pointer[0] + sorting_drag_pointer_offset[0],
+    pointer[1] + sorting_drag_pointer_offset[1]
+  ];
+  const overlap_distance = SORT_FRAGMENT_RADIUS * 2;
 
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
     const candidate = sorting_fragments[index];
-    if (candidate !== sorting_dragged_fragment
-        && gameobjects_overlap(
-          sorting_dragged_fragment[SORT_SHAPE_INDEX],
-          candidate[SORT_SHAPE_INDEX]
-        )) {
-      overlapped = candidate;
+    if (candidate !== sorting_dragged_fragment) {
+      const candidate_position = sorting_slot_positions[
+        candidate[SORT_SLOT_INDEX]
+      ];
+      const delta_x = drop_position[0] - candidate_position[0];
+      const delta_y = drop_position[1] - candidate_position[1];
+
+      if (delta_x * delta_x + delta_y * delta_y
+          < overlap_distance * overlap_distance) {
+        overlapped = candidate;
+      }
     }
   }
 
-  if (overlapped === undefined) {
-    move_sorting_fragment_to_slot(sorting_dragged_fragment);
-  } else {
+  if (overlapped !== undefined) {
     const old_slot = sorting_dragged_fragment[SORT_SLOT_INDEX];
     sorting_dragged_fragment[SORT_SLOT_INDEX] = overlapped[SORT_SLOT_INDEX];
     overlapped[SORT_SLOT_INDEX] = old_slot;
-    move_sorting_fragment_to_slot(sorting_dragged_fragment);
-    move_sorting_fragment_to_slot(overlapped);
+    overlapped[SORT_ANIMATION_BOUNCE_INDEX] = 0.08;
   }
 
+  sorting_dragged_fragment[SORT_ANIMATION_BOUNCE_INDEX] = 0.14;
   sorting_dragged_fragment = undefined;
 }
 
@@ -1976,7 +2459,7 @@ function enter_sorting_level(fragment_list) {
   configure_sorting_fragments(fragment_list);
   update_text(sorting_timer_text, "Time: 05:00");
   update_text(sorting_status_text, "");
-  update_color(sorting_submit_button, [52, 73, 94, 255]);
+  update_color(sorting_submit_button, SORT_CONTROL_COLOUR);
   update_color(sorting_submit_text, [255, 255, 255, 255]);
 
   return true;
@@ -2000,6 +2483,7 @@ function update_sorting_scene(
   mouse_released
 ) {
   animate_sorting_background();
+  animate_sorting_fragments();
 
   if (sorting_active) {
     update_sorting_timer();
