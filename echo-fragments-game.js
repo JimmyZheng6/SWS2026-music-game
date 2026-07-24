@@ -30,6 +30,7 @@ import {
 const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 800;
 const SCENE_START = "start";
+const SCENE_LISTENING = "listening";
 const SCENE_COLLECTION = "collection";
 const SCENE_SORTING = "sorting";
 
@@ -57,6 +58,22 @@ let target_fragment_labels = ["B", "C", "A", "D", "E", "F", "G", "H"];
 const AUDIO_BASE_URL =
   "https://raw.githubusercontent.com/JimmyZheng6/"
   + "echo-fragments/main/sound/music_mp3/";
+const ASSET_BASE_URL =
+  "https://raw.githubusercontent.com/JimmyZheng6/"
+  + "echo-fragments/main/assets/";
+const START_MENU_BACKGROUND_URL =
+  ASSET_BASE_URL + "start-menu-background.png";
+const LISTENING_BACKGROUND_URL =
+  ASSET_BASE_URL + "listening-background.png";
+
+// Both uploaded backgrounds use a 4:3 source image. A uniform scale fills
+// the 900 x 800 canvas while preserving the artwork's proportions.
+const START_MENU_BACKGROUND_SCALE = CANVAS_HEIGHT / 1728;
+const LISTENING_BACKGROUND_SCALE = CANVAS_HEIGHT / 1728;
+const START_ORBIT_CENTRE_X = CANVAS_WIDTH / 2;
+const START_ORBIT_CENTRE_Y = 0;
+const LISTENING_NOTE_ORIGIN_X = 548;
+const LISTENING_NOTE_ORIGIN_Y = 245;
 
 // The first eight entries are the target song. The final four are
 // distractors used by Hard and Extreme difficulty.
@@ -246,9 +263,12 @@ function randomise_target_fragment_labels() {
 
 const collection_objects = [];
 const collection_saved_positions = [];
+const listening_objects = [];
+const listening_saved_positions = [];
 const sorting_objects = [];
 const sorting_saved_positions = [];
 const start_objects = [];
+const start_vortex_stars = [];
 let easy_menu_button = undefined;
 let hard_menu_button = undefined;
 let extreme_menu_button = undefined;
@@ -275,7 +295,7 @@ function create_start_button(
   hover_colour
 ) {
   const background = register_start_object(
-    update_color(create_rectangle(280, 78), idle_colour),
+    update_color(create_rectangle(252, 92), idle_colour),
     [CANVAS_WIDTH / 2, y]
   );
   const title_text = register_start_object(
@@ -304,6 +324,7 @@ function create_start_button(
 }
 
 function create_start_menu() {
+  // Fallback colour shown while the remote background image is loading.
   register_start_object(
     update_color(
       create_rectangle(CANVAS_WIDTH, CANVAS_HEIGHT),
@@ -312,53 +333,71 @@ function create_start_menu() {
     [CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2]
   );
   register_start_object(
-    update_color(
-      update_scale(create_text("ECHO FRAGMENTS"), [2.15, 2.15]),
-      [255, 255, 255, 255]
+    update_scale(
+      create_sprite(START_MENU_BACKGROUND_URL),
+      [
+        START_MENU_BACKGROUND_SCALE,
+        START_MENU_BACKGROUND_SCALE
+      ]
     ),
-    [CANVAS_WIDTH / 2, 95]
-  );
-  register_start_object(
-    update_color(
-      update_scale(
-        create_text("Collect the notes. Rebuild the melody."),
-        [0.82, 0.82]
-      ),
-      [169, 190, 224, 255]
-    ),
-    [CANVAS_WIDTH / 2, 155]
-  );
-  register_start_object(
-    update_color(
-      update_scale(create_text("CHOOSE DIFFICULTY"), [0.76, 0.76]),
-      [236, 205, 116, 255]
-    ),
-    [CANVAS_WIDTH / 2, 220]
+    [CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2]
   );
 
+  // This animation layer orbits around the midpoint of the canvas's top
+  // edge, matching the vanishing point of the uploaded star-trail image.
+  for (let index = 0; index < 160; index = index + 1) {
+    const phase = math_random() * 6.283;
+    const radius = 85 + math_random() * 820;
+    const size = 2 + index % 3;
+    const star = register_start_object(
+      update_color(
+        create_rectangle(size, size + 5),
+        index % 5 === 0
+          ? [255, 215, 244, 205]
+          : index % 5 === 1
+          ? [190, 215, 255, 195]
+          : [255, 255, 255, 225]
+      ),
+      [
+        START_ORBIT_CENTRE_X + radius * math_sin(phase),
+        START_ORBIT_CENTRE_Y
+          + radius * math_cos(phase)
+      ]
+    );
+    start_vortex_stars[index] = [
+      star,
+      phase,
+      radius,
+      0.045 + index % 7 * 0.008
+    ];
+  }
+
+  // The labels already exist in the background artwork. These transparent
+  // rectangles provide accurate click and hover areas without duplicating
+  // the text.
   easy_menu_button = create_start_button(
-    "EASY",
-    "8 notes / 0 decoys / 3 monsters",
+    "",
+    "",
     DIFFICULTY_EASY,
-    315,
-    [51, 121, 96, 255],
-    [68, 157, 122, 255]
+    390,
+    [255, 255, 255, 0],
+    [255, 255, 255, 54]
   );
   hard_menu_button = create_start_button(
-    "HARD",
-    "8 notes / 2 decoys / 5 monsters",
+    "",
+    "",
     DIFFICULTY_HARD,
-    425,
-    [48, 91, 139, 255],
-    [63, 119, 177, 255]
+    507,
+    [255, 255, 255, 0],
+    [255, 255, 255, 54]
   );
   extreme_menu_button = create_start_button(
-    "EXTREME",
-    "8 notes / 4 decoys / 7 monsters",
+    "",
+    "",
     DIFFICULTY_EXTREME,
-    535,
-    [130, 57, 87, 255],
-    [170, 73, 110, 255]
+    623,
+    [255, 255, 255, 0],
+    [255, 255, 255, 54]
   );
 }
 
@@ -411,22 +450,37 @@ function start_selected_difficulty(level) {
   set_difficulty(level);
   randomise_target_fragment_labels();
   hide_start_scene();
-  show_collection_scene();
-  apply_collection_difficulty();
+  show_listening_scene();
+  reset_listening_scene();
   game_has_started = true;
-  current_scene = SCENE_COLLECTION;
-  update_text(
-    collection_message_text,
-    level === DIFFICULTY_EASY
-      ? "Easy: 0 decoys / 3 monsters"
-      : level === DIFFICULTY_HARD
-      ? "Hard: 2 decoys / 5 monsters"
-      : "Extreme: 4 decoys / 7 monsters"
-  );
+  current_scene = SCENE_LISTENING;
   return undefined;
 }
 
+function animate_start_menu() {
+  const time = get_game_time() / 1000;
+
+  for (let index = 0;
+       index < array_length(start_vortex_stars);
+       index = index + 1) {
+    const star = start_vortex_stars[index];
+    const angle = star[1] + time * star[3];
+    const pulse =
+      0.72 + 0.26 * (1 + math_sin(time * 2 + star[1])) / 2;
+    update_position(
+      star[0],
+      [
+        START_ORBIT_CENTRE_X + star[2] * math_sin(angle),
+        START_ORBIT_CENTRE_Y
+          + star[2] * math_cos(angle)
+      ]
+    );
+    update_scale(star[0], [pulse, pulse]);
+  }
+}
+
 function update_start_scene(mouse_pressed) {
+  animate_start_menu();
   update_start_button_hover(easy_menu_button);
   update_start_button_hover(hard_menu_button);
   update_start_button_hover(extreme_menu_button);
@@ -445,6 +499,12 @@ function update_start_scene(mouse_pressed) {
 function register_collection_object(gameobject, position) {
   update_position(gameobject, position);
   collection_objects[array_length(collection_objects)] = gameobject;
+  return gameobject;
+}
+
+function register_listening_object(gameobject, position) {
+  update_position(gameobject, position);
+  listening_objects[array_length(listening_objects)] = gameobject;
   return gameobject;
 }
 
@@ -475,6 +535,27 @@ function show_collection_scene() {
   }
 }
 
+function hide_listening_scene() {
+  for (let index = 0;
+       index < array_length(listening_objects);
+       index = index + 1) {
+    const position = query_position(listening_objects[index]);
+    listening_saved_positions[index] = [position[0], position[1]];
+    update_position(listening_objects[index], [-4500, -4500]);
+  }
+}
+
+function show_listening_scene() {
+  for (let index = 0;
+       index < array_length(listening_objects);
+       index = index + 1) {
+    update_position(
+      listening_objects[index],
+      listening_saved_positions[index]
+    );
+  }
+}
+
 function hide_sorting_scene() {
   for (let index = 0;
        index < array_length(sorting_objects);
@@ -493,6 +574,279 @@ function show_sorting_scene() {
       sorting_objects[index],
       sorting_saved_positions[index]
     );
+  }
+}
+
+// ============================================================
+// Full-song listening scene
+// ============================================================
+
+// The programmed full melody is 48.5 seconds after the 0.5 tempo scaling.
+const FULL_SONG_DURATION_MS = 48.5 * 1000;
+const LISTENING_IDLE = "idle";
+const LISTENING_PLAYING = "playing";
+const LISTENING_COUNTDOWN = "countdown";
+const LISTENING_COUNTDOWN_MIN_SCALE = 22;
+const LISTENING_COUNTDOWN_SCALE_RANGE = 8;
+const listening_vortex_stars = [];
+const listening_note_particles = [];
+let listening_state = LISTENING_IDLE;
+let listening_song_started_at = 0;
+let listening_countdown_started_at = 0;
+let listening_song_audio = undefined;
+let listening_play_button = undefined;
+let listening_play_button_text = undefined;
+let listening_status_text = undefined;
+let listening_countdown_text = undefined;
+
+function create_listening_scene() {
+  // Fallback colour shown while the remote background image is loading.
+  register_listening_object(
+    update_color(
+      create_rectangle(CANVAS_WIDTH, CANVAS_HEIGHT),
+      [7, 10, 38, 255]
+    ),
+    [CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2]
+  );
+  register_listening_object(
+    update_scale(
+      create_sprite(LISTENING_BACKGROUND_URL),
+      [
+        LISTENING_BACKGROUND_SCALE,
+        LISTENING_BACKGROUND_SCALE
+      ]
+    ),
+    [CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2]
+  );
+
+  register_listening_object(
+    update_color(create_rectangle(248, 72), [5, 8, 28, 185]),
+    [456, 611]
+  );
+  listening_play_button = register_listening_object(
+    update_color(create_rectangle(240, 64), [99, 111, 165, 238]),
+    [450, 604]
+  );
+  listening_play_button_text = register_listening_object(
+    update_color(
+      update_scale(create_text("PLAY FULL SONG"), [0.95, 0.95]),
+      [255, 255, 255, 255]
+    ),
+    [450, 604]
+  );
+  listening_status_text = register_listening_object(
+    update_color(
+      update_scale(
+        create_text("Listen carefully before entering the map."),
+        [0.67, 0.67]
+      ),
+      [211, 220, 248, 255]
+    ),
+    [450, 674]
+  );
+  listening_countdown_text = register_listening_object(
+    update_color(
+      update_scale(
+        create_text(""),
+        [
+          LISTENING_COUNTDOWN_MIN_SCALE,
+          LISTENING_COUNTDOWN_MIN_SCALE
+        ]
+      ),
+      [255, 214, 38, 255]
+    ),
+    HIDDEN_POSITION
+  );
+
+  // These notes remain hidden until the full song is playing. Their
+  // individual phase and speed values create a continuous outward stream.
+  for (let index = 0; index < 36; index = index + 1) {
+    const label = index % 3 === 0
+      ? "♪"
+      : index % 3 === 1
+      ? "♫"
+      : "♬";
+    const note = register_listening_object(
+      update_color(
+        update_scale(create_text(label), [0.8, 0.8]),
+        FRAGMENT_COLOURS[index % FRAGMENT_COUNT]
+      ),
+      HIDDEN_POSITION
+    );
+    listening_note_particles[index] = [
+      note,
+      index / 36,
+      0.16 + index % 7 * 0.018
+    ];
+  }
+
+  listening_song_audio = create_audio(
+    AUDIO_BASE_URL + "Castle%20in%20the%20Sky.mp3",
+    1
+  );
+}
+
+function hide_listening_notes() {
+  for (let index = 0;
+       index < array_length(listening_note_particles);
+       index = index + 1) {
+    update_position(listening_note_particles[index][0], HIDDEN_POSITION);
+  }
+}
+
+function reset_listening_scene() {
+  if (listening_song_audio !== undefined) {
+    stop_audio(listening_song_audio);
+  }
+  listening_state = LISTENING_IDLE;
+  listening_song_started_at = 0;
+  listening_countdown_started_at = 0;
+  update_text(listening_play_button_text, "PLAY FULL SONG");
+  update_color(listening_play_button, [117, 130, 175, 235]);
+  update_color(listening_play_button_text, [255, 255, 255, 255]);
+  update_text(
+    listening_status_text,
+    "Listen carefully before entering the map."
+  );
+  update_text(listening_countdown_text, "");
+  update_position(listening_countdown_text, HIDDEN_POSITION);
+  hide_listening_notes();
+}
+
+function animate_listening_vortex() {
+  const time = get_game_time() / 1000;
+
+  for (let index = 0;
+       index < array_length(listening_vortex_stars);
+       index = index + 1) {
+    const star = listening_vortex_stars[index];
+    const angle = star[1] + time * star[3];
+    const pulse = 0.75
+      + 0.24 * (1 + math_sin(time * 2.2 + star[1])) / 2;
+    update_position(
+      star[0],
+      [
+        450 + star[2] * math_sin(angle),
+        365 + star[2] * 0.66 * math_sin(angle + 1.57)
+      ]
+    );
+    update_scale(star[0], [pulse, pulse]);
+  }
+}
+
+function animate_listening_notes() {
+  const elapsed = (get_game_time() - listening_song_started_at) / 1000;
+
+  for (let index = 0;
+       index < array_length(listening_note_particles);
+       index = index + 1) {
+    const note = listening_note_particles[index];
+    const progress = (elapsed * note[2] + note[1]) % 1;
+    const radius = 55 + progress * 390;
+    const angle = note[1] * 6.283 + progress * 2.1;
+    const scale = 0.55 + progress * 1.15;
+    update_position(
+      note[0],
+      [
+        LISTENING_NOTE_ORIGIN_X + radius * math_sin(angle),
+        LISTENING_NOTE_ORIGIN_Y
+          + radius * 0.58 * math_sin(angle + 1.57)
+      ]
+    );
+    update_scale(note[0], [scale, scale]);
+    update_to_top(note[0]);
+  }
+}
+
+function start_full_song() {
+  listening_state = LISTENING_PLAYING;
+  listening_song_started_at = get_game_time();
+  play_audio(listening_song_audio);
+  update_text(listening_play_button_text, "PLAYING...");
+  update_color(listening_play_button, [91, 79, 139, 240]);
+  update_text(
+    listening_status_text,
+    "Follow the melody. The map opens when the song ends."
+  );
+}
+
+function begin_listening_countdown() {
+  listening_state = LISTENING_COUNTDOWN;
+  listening_countdown_started_at = get_game_time();
+  hide_listening_notes();
+  update_text(listening_play_button_text, "SONG COMPLETE");
+  update_color(listening_play_button, [65, 69, 103, 235]);
+  update_text(listening_status_text, "GET READY");
+  update_text(listening_countdown_text, "3");
+  update_position(listening_countdown_text, [450, 400]);
+}
+
+function enter_collection_from_listening() {
+  stop_audio(listening_song_audio);
+  hide_listening_scene();
+  show_collection_scene();
+  apply_collection_difficulty();
+  current_scene = SCENE_COLLECTION;
+  update_text(
+    collection_message_text,
+    difficulty === DIFFICULTY_EASY
+      ? "Easy: 0 decoys / 3 monsters"
+      : difficulty === DIFFICULTY_HARD
+      ? "Hard: 2 decoys / 5 monsters"
+      : "Extreme: 4 decoys / 7 monsters"
+  );
+}
+
+function update_listening_scene(mouse_pressed) {
+  animate_listening_vortex();
+
+  if (listening_state === LISTENING_IDLE) {
+    const pointer_over_play =
+      pointer_over_gameobject(listening_play_button)
+      || pointer_over_gameobject(listening_play_button_text);
+    update_color(
+      listening_play_button,
+      pointer_over_play
+        ? [153, 171, 218, 245]
+        : [117, 130, 175, 235]
+    );
+
+    if (mouse_pressed && pointer_over_play) {
+      start_full_song();
+    }
+  } else if (listening_state === LISTENING_PLAYING) {
+    animate_listening_notes();
+
+    if (get_game_time() - listening_song_started_at
+        >= FULL_SONG_DURATION_MS) {
+      begin_listening_countdown();
+    }
+  } else {
+    const countdown_elapsed =
+      get_game_time() - listening_countdown_started_at;
+
+    if (countdown_elapsed < 1000) {
+      update_text(listening_countdown_text, "3");
+    } else if (countdown_elapsed < 2000) {
+      update_text(listening_countdown_text, "2");
+    } else if (countdown_elapsed < 3000) {
+      update_text(listening_countdown_text, "1");
+    } else {
+      enter_collection_from_listening();
+    }
+
+    const countdown_wave =
+      (1 + math_sin(get_game_time() / 95)) / 2;
+    const pulse = LISTENING_COUNTDOWN_MIN_SCALE
+      + LISTENING_COUNTDOWN_SCALE_RANGE * countdown_wave;
+    const green = math_floor(145 + 105 * countdown_wave);
+    const blue = math_floor(18 + 92 * countdown_wave);
+    update_scale(listening_countdown_text, [pulse, pulse]);
+    update_color(
+      listening_countdown_text,
+      [255, green, blue, 255]
+    );
+    update_to_top(listening_countdown_text);
   }
 }
 
@@ -519,7 +873,7 @@ const MAX_STAMINA = 100;
 const MAX_MONSTER_COUNT = 7;
 const MONSTER_HALF = 9;
 const MONSTER_SPEED = 1.15;
-const MONSTER_CHASE_DISTANCE = 185;
+const MONSTER_CHASE_DISTANCE = 125;
 const MONSTER_ATTACK_DISTANCE = 24;
 const MONSTER_DAMAGE = 10;
 const MONSTER_ATTACK_COOLDOWN_MS = 850;
@@ -2033,6 +2387,7 @@ const SORT_ANIMATION_SCALE_INDEX = 13;
 const SORT_ANIMATION_BOUNCE_INDEX = 14;
 
 let sorting_fragments = [];
+let sorting_fragment_colours = [];
 let sorting_fixed_fragments = [];
 let sorting_slot_positions = [];
 let sorting_sequence_positions = [];
@@ -2062,6 +2417,38 @@ const AUDIO_CACHE_ID_INDEX = 0;
 const AUDIO_CACHE_SONG_ID_INDEX = 1;
 const AUDIO_CACHE_URL_INDEX = 2;
 const AUDIO_CACHE_CLIP_INDEX = 3;
+
+function randomise_sorting_fragment_colours() {
+  sorting_fragment_colours = [];
+
+  for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    sorting_fragment_colours[index] = FRAGMENT_COLOURS[index];
+  }
+
+  for (let index = FRAGMENT_COUNT - 1;
+       index > 0;
+       index = index - 1) {
+    const swap_index = math_floor(math_random() * (index + 1));
+    const old_colour = sorting_fragment_colours[index];
+    sorting_fragment_colours[index] =
+      sorting_fragment_colours[swap_index];
+    sorting_fragment_colours[swap_index] = old_colour;
+  }
+
+  // Do not allow the rare unshuffled rainbow order.
+  let is_original_order = true;
+  for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    if (sorting_fragment_colours[index] !== FRAGMENT_COLOURS[index]) {
+      is_original_order = false;
+    }
+  }
+
+  if (is_original_order) {
+    const first_colour = sorting_fragment_colours[0];
+    sorting_fragment_colours[0] = sorting_fragment_colours[1];
+    sorting_fragment_colours[1] = first_colour;
+  }
+}
 
 function create_fragment_audio_cache() {
   for (let index = 0;
@@ -2439,6 +2826,8 @@ function create_sorting_fragments() {
 }
 
 function configure_sorting_fragments(fragment_list) {
+  randomise_sorting_fragment_colours();
+
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
     const data = fragment_list[index];
     const fragment = sorting_fragments[index];
@@ -2452,7 +2841,7 @@ function configure_sorting_fragments(fragment_list) {
     update_text(fragment[SORT_LABEL_TEXT_INDEX], label);
     update_color(
       fragment[SORT_SHAPE_INDEX],
-      colour_for_fragment(data)
+      sorting_fragment_colours[index]
     );
     update_text(fragment[SORT_BUTTON_TEXT_INDEX], "Play");
     update_color(
@@ -3365,6 +3754,8 @@ function update_game(game_state) {
 
   if (current_scene === SCENE_START) {
     update_start_scene(mouse_pressed);
+  } else if (current_scene === SCENE_LISTENING) {
+    update_listening_scene(mouse_pressed);
   } else if (current_scene === SCENE_COLLECTION) {
     update_collection_scene(e_pressed, q_pressed, r_pressed);
   } else if (current_scene === SCENE_SORTING) {
@@ -3383,6 +3774,8 @@ function update_game(game_state) {
 initialise_collection_scene();
 hide_collection_scene();
 initialise_sorting_scene();
+create_listening_scene();
+hide_listening_scene();
 create_start_menu();
 update_loop(update_game);
 
