@@ -192,6 +192,7 @@ let mouse_was_down = false;
 let difficulty = DIFFICULTY_EASY;
 let note_count = 8;
 let wall_percent = 17;
+let monster_count = 3;
 let game_has_started = false;
 
 set_dimensions([CANVAS_WIDTH, CANVAS_HEIGHT]);
@@ -337,7 +338,7 @@ function create_start_menu() {
 
   easy_menu_button = create_start_button(
     "EASY",
-    "8 fragments / 0 distractors",
+    "8 notes / 0 decoys / 3 monsters",
     DIFFICULTY_EASY,
     315,
     [51, 121, 96, 255],
@@ -345,7 +346,7 @@ function create_start_menu() {
   );
   hard_menu_button = create_start_button(
     "HARD",
-    "8 fragments + 2 distractors",
+    "8 notes / 2 decoys / 5 monsters",
     DIFFICULTY_HARD,
     425,
     [48, 91, 139, 255],
@@ -353,7 +354,7 @@ function create_start_menu() {
   );
   extreme_menu_button = create_start_button(
     "EXTREME",
-    "8 fragments + 4 distractors",
+    "8 notes / 4 decoys / 7 monsters",
     DIFFICULTY_EXTREME,
     535,
     [130, 57, 87, 255],
@@ -390,12 +391,15 @@ function set_difficulty(level) {
   if (level === DIFFICULTY_EASY) {
     note_count = 8;
     wall_percent = 17;
+    monster_count = 3;
   } else if (level === DIFFICULTY_HARD) {
     note_count = 10;
     wall_percent = 25;
+    monster_count = 5;
   } else {
     note_count = 12;
     wall_percent = 30;
+    monster_count = 7;
   }
 }
 
@@ -414,10 +418,10 @@ function start_selected_difficulty(level) {
   update_text(
     collection_message_text,
     level === DIFFICULTY_EASY
-      ? "Easy: 0 decoys"
+      ? "Easy: 0 decoys / 3 monsters"
       : level === DIFFICULTY_HARD
-      ? "Hard: 2 decoys"
-      : "Extreme: 4 decoys"
+      ? "Hard: 2 decoys / 5 monsters"
+      : "Extreme: 4 decoys / 7 monsters"
   );
   return undefined;
 }
@@ -512,6 +516,23 @@ const WALK_SPEED = 3;
 const RUN_SPEED = 9;
 const MAX_HP = 100;
 const MAX_STAMINA = 100;
+const MAX_MONSTER_COUNT = 7;
+const MONSTER_HALF = 9;
+const MONSTER_SPEED = 1.15;
+const MONSTER_CHASE_DISTANCE = 185;
+const MONSTER_ATTACK_DISTANCE = 24;
+const MONSTER_DAMAGE = 10;
+const MONSTER_ATTACK_COOLDOWN_MS = 850;
+const MONSTER_FLASH_DURATION_MS = 160;
+const MONSTER_COLOURS = [
+  [117, 45, 156, 255],
+  [166, 53, 112, 255],
+  [66, 79, 166, 255],
+  [143, 62, 66, 255],
+  [73, 126, 125, 255],
+  [108, 63, 143, 255],
+  [157, 80, 55, 255]
+];
 const DROP_MIN_DISTANCE = 38;
 const DROP_OFFSETS = [
   [0, 0],
@@ -542,6 +563,7 @@ const wall_scores = [];
 const wall_visuals = [];
 let reachable_cells = [];
 const world_fragments = [];
+const world_monsters = [];
 const inventory = ["", "", "", "", "", "", "", ""];
 const inventory_texts = [];
 const inventory_slot_backs = [];
@@ -558,6 +580,20 @@ const WORLD_SCALE_INDEX = 6;
 const WORLD_SPAWN_ROW_INDEX = 7;
 const WORLD_SPAWN_COL_INDEX = 8;
 
+// world_monsters item:
+// [body, face, left_eye, right_eye, spawn_row, spawn_column,
+//  active, phase, colour, flash_until]
+const MONSTER_BODY_INDEX = 0;
+const MONSTER_FACE_INDEX = 1;
+const MONSTER_LEFT_EYE_INDEX = 2;
+const MONSTER_RIGHT_EYE_INDEX = 3;
+const MONSTER_SPAWN_ROW_INDEX = 4;
+const MONSTER_SPAWN_COL_INDEX = 5;
+const MONSTER_ACTIVE_INDEX = 6;
+const MONSTER_PHASE_INDEX = 7;
+const MONSTER_COLOUR_INDEX = 8;
+const MONSTER_FLASH_UNTIL_INDEX = 9;
+
 let player = undefined;
 let goal_object = undefined;
 let selected_slot = 0;
@@ -573,6 +609,8 @@ let collection_action_text = undefined;
 let collection_message_text = undefined;
 let collection_progress_text = undefined;
 let collection_playing_item = undefined;
+let last_monster_attack_at = -MONSTER_ATTACK_COOLDOWN_MS;
+let player_defeated = false;
 
 function initialise_map() {
   for (let row = 0; row < ROWS; row = row + 1) {
@@ -870,6 +908,121 @@ function create_world_fragments() {
       1.8,
       row,
       column
+    ];
+  }
+}
+
+function monster_position_is_far(row, column) {
+  const start_delta_row = row - START_ROW;
+  const start_delta_column = column - START_COL;
+  const goal_delta_row = row - GOAL_ROW;
+  const goal_delta_column = column - GOAL_COL;
+
+  if (start_delta_row * start_delta_row
+        + start_delta_column * start_delta_column < 64
+      || goal_delta_row * goal_delta_row
+        + goal_delta_column * goal_delta_column < 36) {
+    return false;
+  }
+
+  for (let index = 0;
+       index < array_length(world_fragments);
+       index = index + 1) {
+    const item = world_fragments[index];
+    const delta_row = row - item[WORLD_SPAWN_ROW_INDEX];
+    const delta_column = column - item[WORLD_SPAWN_COL_INDEX];
+
+    if (delta_row * delta_row + delta_column * delta_column < 9) {
+      return false;
+    }
+  }
+
+  for (let index = 0;
+       index < array_length(world_monsters);
+       index = index + 1) {
+    const monster = world_monsters[index];
+    const delta_row = row - monster[MONSTER_SPAWN_ROW_INDEX];
+    const delta_column = column - monster[MONSTER_SPAWN_COL_INDEX];
+
+    if (delta_row * delta_row + delta_column * delta_column < 36) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function update_monster_visual_position(monster, position) {
+  update_position(monster[MONSTER_BODY_INDEX], position);
+  update_position(
+    monster[MONSTER_FACE_INDEX],
+    [position[0], position[1] - 4]
+  );
+  update_position(
+    monster[MONSTER_LEFT_EYE_INDEX],
+    [position[0] - 4, position[1] - 4]
+  );
+  update_position(
+    monster[MONSTER_RIGHT_EYE_INDEX],
+    [position[0] + 4, position[1] - 4]
+  );
+}
+
+function create_world_monsters() {
+  for (let index = 0;
+       index < MAX_MONSTER_COUNT;
+       index = index + 1) {
+    let row = 1;
+    let column = 1;
+    let position_found = false;
+
+    while (!position_found) {
+      row = 1 + math_floor(math_random() * (ROWS - 2));
+      column = 1 + math_floor(math_random() * (COLS - 2));
+      position_found = map[row][column] === 0
+        && reachable_cells[row][column]
+        && monster_position_is_far(row, column);
+    }
+
+    const position = [
+      column * TILE + TILE / 2,
+      row * TILE + TILE / 2
+    ];
+    const colour = MONSTER_COLOURS[index];
+    const face_colour = [
+      colour[0] + 45,
+      colour[1] + 45,
+      colour[2] + 45,
+      255
+    ];
+    const body = register_collection_object(
+      update_color(create_rectangle(18, 16), colour),
+      position
+    );
+    const face = register_collection_object(
+      update_color(create_rectangle(14, 7), face_colour),
+      [position[0], position[1] - 4]
+    );
+    const left_eye = register_collection_object(
+      update_color(create_rectangle(3, 3), [255, 245, 188, 255]),
+      [position[0] - 4, position[1] - 4]
+    );
+    const right_eye = register_collection_object(
+      update_color(create_rectangle(3, 3), [255, 245, 188, 255]),
+      [position[0] + 4, position[1] - 4]
+    );
+
+    world_monsters[index] = [
+      body,
+      face,
+      left_eye,
+      right_eye,
+      row,
+      column,
+      true,
+      index * 1.73,
+      colour,
+      0
     ];
   }
 }
@@ -1280,6 +1433,146 @@ function move_player() {
   return query_position(player);
 }
 
+function monster_can_move(position) {
+  const left = math_floor((position[0] - MONSTER_HALF) / TILE);
+  const right = math_floor((position[0] + MONSTER_HALF) / TILE);
+  const top = math_floor((position[1] - MONSTER_HALF) / TILE);
+  const bottom = math_floor((position[1] + MONSTER_HALF) / TILE);
+
+  if (left < 0
+      || right >= COLS
+      || top < 0
+      || bottom >= ROWS) {
+    return false;
+  }
+
+  return map[top][left] !== 1
+    && map[top][right] !== 1
+    && map[bottom][left] !== 1
+    && map[bottom][right] !== 1;
+}
+
+function move_monster(monster, step_x, step_y) {
+  const position = query_position(monster[MONSTER_BODY_INDEX]);
+  const combined_position = [
+    position[0] + step_x,
+    position[1] + step_y
+  ];
+  const horizontal_position = [position[0] + step_x, position[1]];
+  const vertical_position = [position[0], position[1] + step_y];
+  let next_position = position;
+
+  if (monster_can_move(combined_position)) {
+    next_position = combined_position;
+  } else if (monster_can_move(horizontal_position)) {
+    next_position = horizontal_position;
+  } else if (monster_can_move(vertical_position)) {
+    next_position = vertical_position;
+  }
+
+  update_monster_visual_position(monster, next_position);
+  return next_position;
+}
+
+function update_world_monsters(player_position) {
+  const now = get_game_time();
+
+  for (let index = 0;
+       index < array_length(world_monsters);
+       index = index + 1) {
+    const monster = world_monsters[index];
+
+    if (monster[MONSTER_ACTIVE_INDEX]) {
+      const position = query_position(monster[MONSTER_BODY_INDEX]);
+      const delta_x = player_position[0] - position[0];
+      const delta_y = player_position[1] - position[1];
+      const distance_squared =
+        delta_x * delta_x + delta_y * delta_y;
+      const is_chasing = distance_squared
+        < MONSTER_CHASE_DISTANCE * MONSTER_CHASE_DISTANCE;
+      let step_x = 0;
+      let step_y = 0;
+
+      if (is_chasing) {
+        step_x = delta_x > 2
+          ? MONSTER_SPEED
+          : delta_x < -2
+          ? -MONSTER_SPEED
+          : 0;
+        step_y = delta_y > 2
+          ? MONSTER_SPEED
+          : delta_y < -2
+          ? -MONSTER_SPEED
+          : 0;
+      } else {
+        const phase = monster[MONSTER_PHASE_INDEX];
+        step_x = MONSTER_SPEED * 0.55
+          * math_sin(now / 760 + phase);
+        step_y = MONSTER_SPEED * 0.55
+          * math_sin(now / 940 + phase + 1.8);
+      }
+
+      const moved_position = move_monster(monster, step_x, step_y);
+      const attack_delta_x = player_position[0] - moved_position[0];
+      const attack_delta_y = player_position[1] - moved_position[1];
+      const attack_distance_squared =
+        attack_delta_x * attack_delta_x
+        + attack_delta_y * attack_delta_y;
+
+      if (attack_distance_squared
+            < MONSTER_ATTACK_DISTANCE * MONSTER_ATTACK_DISTANCE
+          && now - last_monster_attack_at
+            >= MONSTER_ATTACK_COOLDOWN_MS) {
+        hp = hp - MONSTER_DAMAGE;
+        if (hp < 0) {
+          hp = 0;
+        }
+        last_monster_attack_at = now;
+        monster[MONSTER_FLASH_UNTIL_INDEX] =
+          now + MONSTER_FLASH_DURATION_MS;
+
+        if (hp === 0) {
+          player_defeated = true;
+          stop_collection_audio();
+          update_text(collection_message_text, "Defeated by a monster.");
+        } else {
+          update_text(
+            collection_message_text,
+            "Monster hit! HP: " + stringify(hp)
+          );
+        }
+      }
+
+      update_color(
+        monster[MONSTER_BODY_INDEX],
+        now < monster[MONSTER_FLASH_UNTIL_INDEX]
+          ? [235, 68, 86, 255]
+          : monster[MONSTER_COLOUR_INDEX]
+      );
+      update_to_top(monster[MONSTER_BODY_INDEX]);
+      update_to_top(monster[MONSTER_FACE_INDEX]);
+      update_to_top(monster[MONSTER_LEFT_EYE_INDEX]);
+      update_to_top(monster[MONSTER_RIGHT_EYE_INDEX]);
+    }
+  }
+}
+
+function revive_player() {
+  hp = MAX_HP;
+  stamina = MAX_STAMINA;
+  current_speed = WALK_SPEED;
+  sprint_locked = false;
+  player_defeated = false;
+  last_monster_attack_at = get_game_time();
+  update_position(
+    player,
+    [START_COL * TILE + TILE / 2, START_ROW * TILE + TILE / 2]
+  );
+  update_player_status(query_position(player));
+  update_text(collection_action_text, "");
+  update_text(collection_message_text, "Revived at the start.");
+}
+
 function update_player_status(position) {
   const x = position[0];
   const y = position[1];
@@ -1512,10 +1805,39 @@ function update_collection_prompt(position, nearby_item) {
 }
 
 function update_collection_scene(e_pressed, q_pressed, r_pressed) {
+  if (player_defeated) {
+    if (e_pressed) {
+      revive_player();
+    }
+
+    if (player_defeated) {
+      update_player_status(query_position(player));
+      update_text(collection_action_text, "E: REVIVE");
+      update_to_top(player);
+      update_to_top(hp_back);
+      update_to_top(hp_front);
+      update_to_top(stamina_back);
+      update_to_top(stamina_front);
+      return undefined;
+    }
+  }
+
   const position = move_player();
+  update_world_monsters(position);
+  update_player_status(position);
+
+  if (player_defeated) {
+    update_text(collection_action_text, "E: REVIVE");
+    update_to_top(player);
+    update_to_top(hp_back);
+    update_to_top(hp_front);
+    update_to_top(stamina_back);
+    update_to_top(stamina_front);
+    return undefined;
+  }
+
   const nearby_item = find_nearby_world_fragment(position);
   select_inventory_slot();
-  update_player_status(position);
   highlight_world_fragments(position);
   update_collection_prompt(position, nearby_item);
 
@@ -1554,6 +1876,7 @@ function initialise_collection_scene() {
   build_valid_map();
   create_collection_world();
   create_world_fragments();
+  create_world_monsters();
   create_player_and_status();
   create_collection_ui();
   update_inventory_ui();
@@ -1613,6 +1936,28 @@ function apply_collection_difficulty() {
     );
   }
 
+  for (let index = 0;
+       index < array_length(world_monsters);
+       index = index + 1) {
+    const monster = world_monsters[index];
+    const is_used_by_difficulty = index < monster_count;
+    const spawn_position = [
+      monster[MONSTER_SPAWN_COL_INDEX] * TILE + TILE / 2,
+      monster[MONSTER_SPAWN_ROW_INDEX] * TILE + TILE / 2
+    ];
+
+    monster[MONSTER_ACTIVE_INDEX] = is_used_by_difficulty;
+    monster[MONSTER_FLASH_UNTIL_INDEX] = 0;
+    update_color(
+      monster[MONSTER_BODY_INDEX],
+      monster[MONSTER_COLOUR_INDEX]
+    );
+    update_monster_visual_position(
+      monster,
+      is_used_by_difficulty ? spawn_position : HIDDEN_POSITION
+    );
+  }
+
   for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
     inventory[index] = "";
   }
@@ -1622,6 +1967,8 @@ function apply_collection_difficulty() {
   stamina = MAX_STAMINA;
   current_speed = WALK_SPEED;
   sprint_locked = false;
+  player_defeated = false;
+  last_monster_attack_at = -MONSTER_ATTACK_COOLDOWN_MS;
   update_position(
     player,
     [START_COL * TILE + TILE / 2, START_ROW * TILE + TILE / 2]
@@ -2847,8 +3194,7 @@ function build_complete_fragment_sequence() {
        index < array_length(FIXED_FRAGMENT_DATA);
        index = index + 1) {
     const fixed_item = FIXED_FRAGMENT_DATA[index];
-    complete_sequence[fixed_item[FIXED_POSITION_INDEX]] =
-      fixed_item[FIXED_DATA_INDEX];
+    complete_sequence[fixed_item[FIXED_POSITION_INDEX]] =      fixed_item[FIXED_DATA_INDEX];
   }
 
   for (let slot_index = 0;
