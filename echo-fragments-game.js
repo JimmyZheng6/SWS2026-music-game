@@ -29,6 +29,7 @@ import {
 
 const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 800;
+const SCENE_START = "start";
 const SCENE_COLLECTION = "collection";
 const SCENE_SORTING = "sorting";
 
@@ -54,10 +55,10 @@ const TARGET_FRAGMENT_LABELS = ["B", "C", "A", "D", "E", "F", "G", "H"];
 
 const AUDIO_BASE_URL =
   "https://raw.githubusercontent.com/JimmyZheng6/"
-  + "echo-fragments/sound/music_mp3/";
+  + "echo-fragments/main/sound/music_mp3/";
 
-// Only these eight fragments enter collection and sorting.
-// Their correct relative order is B, C, A, D, E, F, G, H.
+// The first eight entries are the target song. The final four are
+// distractors used by Hard and Extreme difficulty.
 const ALL_FRAGMENT_DATA = [
   [
     "song_01_fragment_B",
@@ -98,8 +99,36 @@ const ALL_FRAGMENT_DATA = [
     "song_01_fragment_H",
     "song_01",
     AUDIO_BASE_URL + "correct_fragment_H.mp3"
+  ],
+  [
+    "false_fragment_a",
+    "distractor_song_a",
+    AUDIO_BASE_URL + "false_fragment_a.mp3"
+  ],
+  [
+    "false_fragment_b",
+    "distractor_song_b",
+    AUDIO_BASE_URL + "false_fragment_b.mp3"
+  ],
+  [
+    "false_fragment_c",
+    "distractor_song_c",
+    AUDIO_BASE_URL + "false_fragment_c.mp3"
+  ],
+  [
+    "false_fragment_d",
+    "distractor_song_d",
+    AUDIO_BASE_URL + "false_fragment_d.mp3"
   ]
 ];
+
+const DISTRACTOR_FRAGMENT_IDS = [
+  "false_fragment_a",
+  "false_fragment_b",
+  "false_fragment_c",
+  "false_fragment_d"
+];
+const DISTRACTOR_FRAGMENT_LABELS = ["X1", "X2", "X3", "X4"];
 
 // Fixed sequence item: [zero_based_position, display_label, fragment_data]
 // These two repeats are shown in sorting but can never be dragged.
@@ -139,11 +168,21 @@ const FRAGMENT_COLOURS = [
   [202, 81, 130, 255]
 ];
 
-let current_scene = SCENE_COLLECTION;
+const DIFFICULTY_EASY = 1;
+const DIFFICULTY_HARD = 2;
+const DIFFICULTY_EXTREME = 3;
+const MAX_WALL_PERCENT = 30;
+const HIDDEN_POSITION = [-5000, -5000];
+
+let current_scene = SCENE_START;
 let e_was_down = false;
 let q_was_down = false;
 let r_was_down = false;
 let mouse_was_down = false;
+let difficulty = DIFFICULTY_EASY;
+let note_count = 8;
+let wall_percent = 17;
+let game_has_started = false;
 
 set_dimensions([CANVAS_WIDTH, CANVAS_HEIGHT]);
 
@@ -155,6 +194,195 @@ const collection_objects = [];
 const collection_saved_positions = [];
 const sorting_objects = [];
 const sorting_saved_positions = [];
+const start_objects = [];
+let easy_menu_button = undefined;
+let hard_menu_button = undefined;
+let extreme_menu_button = undefined;
+
+const START_BUTTON_BACKGROUND_INDEX = 0;
+const START_BUTTON_TITLE_INDEX = 1;
+const START_BUTTON_DETAIL_INDEX = 2;
+const START_BUTTON_IDLE_COLOUR_INDEX = 3;
+const START_BUTTON_HOVER_COLOUR_INDEX = 4;
+const START_BUTTON_LEVEL_INDEX = 5;
+
+function register_start_object(gameobject, position) {
+  update_position(gameobject, position);
+  start_objects[array_length(start_objects)] = gameobject;
+  return gameobject;
+}
+
+function create_start_button(
+  title,
+  detail,
+  level,
+  y,
+  idle_colour,
+  hover_colour
+) {
+  const background = register_start_object(
+    update_color(create_rectangle(280, 78), idle_colour),
+    [CANVAS_WIDTH / 2, y]
+  );
+  const title_text = register_start_object(
+    update_color(
+      update_scale(create_text(title), [1.15, 1.15]),
+      [255, 255, 255, 255]
+    ),
+    [CANVAS_WIDTH / 2, y - 13]
+  );
+  const detail_text = register_start_object(
+    update_color(
+      update_scale(create_text(detail), [0.58, 0.58]),
+      [225, 230, 242, 255]
+    ),
+    [CANVAS_WIDTH / 2, y + 21]
+  );
+
+  return [
+    background,
+    title_text,
+    detail_text,
+    idle_colour,
+    hover_colour,
+    level
+  ];
+}
+
+function create_start_menu() {
+  register_start_object(
+    update_color(
+      create_rectangle(CANVAS_WIDTH, CANVAS_HEIGHT),
+      [10, 14, 42, 255]
+    ),
+    [CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2]
+  );
+  register_start_object(
+    update_color(
+      update_scale(create_text("ECHO FRAGMENTS"), [2.15, 2.15]),
+      [255, 255, 255, 255]
+    ),
+    [CANVAS_WIDTH / 2, 95]
+  );
+  register_start_object(
+    update_color(
+      update_scale(
+        create_text("Collect the notes. Rebuild the melody."),
+        [0.82, 0.82]
+      ),
+      [169, 190, 224, 255]
+    ),
+    [CANVAS_WIDTH / 2, 155]
+  );
+  register_start_object(
+    update_color(
+      update_scale(create_text("CHOOSE DIFFICULTY"), [0.76, 0.76]),
+      [236, 205, 116, 255]
+    ),
+    [CANVAS_WIDTH / 2, 220]
+  );
+
+  easy_menu_button = create_start_button(
+    "EASY",
+    "8 fragments / 0 distractors",
+    DIFFICULTY_EASY,
+    315,
+    [51, 121, 96, 255],
+    [68, 157, 122, 255]
+  );
+  hard_menu_button = create_start_button(
+    "HARD",
+    "8 fragments + 2 distractors",
+    DIFFICULTY_HARD,
+    425,
+    [48, 91, 139, 255],
+    [63, 119, 177, 255]
+  );
+  extreme_menu_button = create_start_button(
+    "EXTREME",
+    "8 fragments + 4 distractors",
+    DIFFICULTY_EXTREME,
+    535,
+    [130, 57, 87, 255],
+    [170, 73, 110, 255]
+  );
+}
+
+function pointer_over_start_button(button) {
+  return pointer_over_gameobject(button[START_BUTTON_BACKGROUND_INDEX])
+    || pointer_over_gameobject(button[START_BUTTON_TITLE_INDEX])
+    || pointer_over_gameobject(button[START_BUTTON_DETAIL_INDEX]);
+}
+
+function update_start_button_hover(button) {
+  update_color(
+    button[START_BUTTON_BACKGROUND_INDEX],
+    pointer_over_start_button(button)
+      ? button[START_BUTTON_HOVER_COLOUR_INDEX]
+      : button[START_BUTTON_IDLE_COLOUR_INDEX]
+  );
+}
+
+function hide_start_scene() {
+  for (let index = 0;
+       index < array_length(start_objects);
+       index = index + 1) {
+    update_position(start_objects[index], [-4000, -4000]);
+  }
+}
+
+function set_difficulty(level) {
+  difficulty = level;
+
+  if (level === DIFFICULTY_EASY) {
+    note_count = 8;
+    wall_percent = 17;
+  } else if (level === DIFFICULTY_HARD) {
+    note_count = 10;
+    wall_percent = 25;
+  } else {
+    note_count = 12;
+    wall_percent = 30;
+  }
+}
+
+function start_selected_difficulty(level) {
+  if (game_has_started || current_scene !== SCENE_START) {
+    return undefined;
+  }
+
+  set_difficulty(level);
+  hide_start_scene();
+  show_collection_scene();
+  apply_collection_difficulty();
+  game_has_started = true;
+  current_scene = SCENE_COLLECTION;
+  update_text(
+    collection_message_text,
+    level === DIFFICULTY_EASY
+      ? "Easy: 0 decoys"
+      : level === DIFFICULTY_HARD
+      ? "Hard: 2 decoys"
+      : "Extreme: 4 decoys"
+  );
+  return undefined;
+}
+
+function update_start_scene(mouse_pressed) {
+  update_start_button_hover(easy_menu_button);
+  update_start_button_hover(hard_menu_button);
+  update_start_button_hover(extreme_menu_button);
+
+  if (mouse_pressed) {
+    if (pointer_over_start_button(easy_menu_button)) {
+      start_selected_difficulty(DIFFICULTY_EASY);
+    } else if (pointer_over_start_button(hard_menu_button)) {
+      start_selected_difficulty(DIFFICULTY_HARD);
+    } else if (pointer_over_start_button(extreme_menu_button)) {
+      start_selected_difficulty(DIFFICULTY_EXTREME);
+    }
+  }
+}
 
 function register_collection_object(gameobject, position) {
   update_position(gameobject, position);
@@ -256,6 +484,8 @@ const DROP_OFFSETS = [
 ];
 
 const map = [];
+const wall_scores = [];
+const wall_visuals = [];
 let reachable_cells = [];
 const world_fragments = [];
 const inventory = ["", "", "", "", "", "", "", ""];
@@ -293,8 +523,12 @@ let collection_playing_item = undefined;
 function initialise_map() {
   for (let row = 0; row < ROWS; row = row + 1) {
     map[row] = [];
+    wall_scores[row] = [];
+    wall_visuals[row] = [];
     for (let column = 0; column < COLS; column = column + 1) {
       map[row][column] = 0;
+      wall_scores[row][column] = 100;
+      wall_visuals[row][column] = [];
     }
   }
 }
@@ -306,15 +540,19 @@ function generate_obstacles() {
           || row === ROWS - 1
           || column === 0
           || column === COLS - 1) {
+        wall_scores[row][column] = 0;
         map[row][column] = 1;
       } else {
-        map[row][column] = math_random() < 0.17 ? 1 : 0;
+        const score = math_random() * 100;
+        wall_scores[row][column] = score;
+        map[row][column] = score < MAX_WALL_PERCENT ? 1 : 0;
       }
     }
   }
 
   for (let row = 1; row <= 3; row = row + 1) {
     for (let column = 1; column <= 3; column = column + 1) {
+      wall_scores[row][column] = 100;
       map[row][column] = 0;
     }
   }
@@ -323,6 +561,7 @@ function generate_obstacles() {
     for (let column = COLS - 4;
          column <= COLS - 2;
          column = column + 1) {
+      wall_scores[row][column] = 100;
       map[row][column] = 0;
     }
   }
@@ -391,9 +630,11 @@ function build_valid_map() {
     for (let column = START_COL;
          column <= GOAL_COL;
          column = column + 1) {
+      wall_scores[START_ROW][column] = 100;
       map[START_ROW][column] = 0;
     }
     for (let row = START_ROW; row <= GOAL_ROW; row = row + 1) {
+      wall_scores[row][GOAL_COL] = 100;
       map[row][GOAL_COL] = 0;
     }
     map_has_path();
@@ -459,18 +700,21 @@ function create_collection_world() {
           245,
           255
         ];
+        const shadow_position = [position[0] + 2, position[1] + 2];
+        const top_highlight_position = [position[0] - 1, position[1] - 8];
+        const left_highlight_position = [position[0] - 8, position[1]];
 
         // Offset shadow gives each wall tile depth.
-        register_collection_object(
+        const shadow = register_collection_object(
           update_color(
             create_rectangle(TILE - 2, TILE - 2),
             [48, 15, 72, 255]
           ),
-          [position[0] + 2, position[1] + 2]
+          shadow_position
         );
 
         // Main purple-magenta wall face.
-        register_collection_object(
+        const face = register_collection_object(
           update_color(
             create_rectangle(TILE - 3, TILE - 3),
             wall_colour
@@ -479,20 +723,27 @@ function create_collection_world() {
         );
 
         // Top and left highlights create a beveled pixel-art edge.
-        register_collection_object(
+        const top_highlight = register_collection_object(
           update_color(
             create_rectangle(TILE - 7, 3),
             wall_highlight
           ),
-          [position[0] - 1, position[1] - 8]
+          top_highlight_position
         );
-        register_collection_object(
+        const left_highlight = register_collection_object(
           update_color(
             create_rectangle(3, TILE - 8),
             wall_highlight
           ),
-          [position[0] - 8, position[1]]
+          left_highlight_position
         );
+
+        wall_visuals[row][column] = [
+          [shadow, shadow_position],
+          [face, position],
+          [top_highlight, top_highlight_position],
+          [left_highlight, left_highlight_position]
+        ];
       }
     }
   }
@@ -1253,6 +1504,76 @@ function initialise_collection_scene() {
   update_player_status(query_position(player));
 }
 
+function apply_collection_difficulty() {
+  stop_collection_audio();
+
+  for (let row = 0; row < ROWS; row = row + 1) {
+    for (let column = 0; column < COLS; column = column + 1) {
+      const border = row === 0
+        || row === ROWS - 1
+        || column === 0
+        || column === COLS - 1;
+      const wall_is_active = border
+        || wall_scores[row][column] < wall_percent;
+      const visuals = wall_visuals[row][column];
+
+      map[row][column] = wall_is_active ? 1 : 0;
+
+      for (let visual_index = 0;
+           visual_index < array_length(visuals);
+           visual_index = visual_index + 1) {
+        update_position(
+          visuals[visual_index][0],
+          wall_is_active
+            ? visuals[visual_index][1]
+            : HIDDEN_POSITION
+        );
+      }
+    }
+  }
+
+  // The Extreme map is generated first and guaranteed playable. Easy and
+  // Hard only remove walls from it, so all three difficulties remain valid.
+  map_has_path();
+
+  for (let index = 0;
+       index < array_length(world_fragments);
+       index = index + 1) {
+    const item = world_fragments[index];
+    const is_used_by_difficulty = index < note_count;
+    const spawn_position = [
+      item[WORLD_SPAWN_COL_INDEX] * TILE + TILE / 2,
+      item[WORLD_SPAWN_ROW_INDEX] * TILE + TILE / 2
+    ];
+
+    item[WORLD_ACTIVE_INDEX] = is_used_by_difficulty;
+    item[WORLD_ROW_INDEX] = item[WORLD_SPAWN_ROW_INDEX];
+    item[WORLD_COL_INDEX] = item[WORLD_SPAWN_COL_INDEX];
+    item[WORLD_SCALE_INDEX] = 1.8;
+    update_scale(item[WORLD_OBJECT_INDEX], [1.8, 1.8]);
+    update_position(
+      item[WORLD_OBJECT_INDEX],
+      is_used_by_difficulty ? spawn_position : HIDDEN_POSITION
+    );
+  }
+
+  for (let index = 0; index < FRAGMENT_COUNT; index = index + 1) {
+    inventory[index] = "";
+  }
+
+  selected_slot = 0;
+  hp = MAX_HP;
+  stamina = MAX_STAMINA;
+  current_speed = WALK_SPEED;
+  sprint_locked = false;
+  update_position(
+    player,
+    [START_COL * TILE + TILE / 2, START_ROW * TILE + TILE / 2]
+  );
+  update_inventory_ui();
+  update_player_status(query_position(player));
+}
+
 // ============================================================
 // Sorting scene
 // ============================================================
@@ -1357,7 +1678,7 @@ function create_fragment_audio_cache() {
        index < array_length(FIXED_FRAGMENT_DATA);
        index = index + 1) {
     const data = FIXED_FRAGMENT_DATA[index][FIXED_DATA_INDEX];
-    const cache_index = FRAGMENT_COUNT + index;
+    const cache_index = array_length(ALL_FRAGMENT_DATA) + index;
     fragment_audio_cache[cache_index] = [
       data[DATA_ID_INDEX],
       data[DATA_SONG_ID_INDEX],
@@ -1743,6 +2064,14 @@ function label_for_fragment_id(fragment_id) {
        index = index + 1) {
     if (TARGET_FRAGMENT_IDS[index] === fragment_id) {
       return TARGET_FRAGMENT_LABELS[index];
+    }
+  }
+
+  for (let index = 0;
+       index < array_length(DISTRACTOR_FRAGMENT_IDS);
+       index = index + 1) {
+    if (DISTRACTOR_FRAGMENT_IDS[index] === fragment_id) {
+      return DISTRACTOR_FRAGMENT_LABELS[index];
     }
   }
 
@@ -2628,7 +2957,9 @@ function update_game(game_state) {
   const mouse_pressed = mouse_is_down && !mouse_was_down;
   const mouse_released = !mouse_is_down && mouse_was_down;
 
-  if (current_scene === SCENE_COLLECTION) {
+  if (current_scene === SCENE_START) {
+    update_start_scene(mouse_pressed);
+  } else if (current_scene === SCENE_COLLECTION) {
     update_collection_scene(e_pressed, q_pressed, r_pressed);
   } else if (current_scene === SCENE_SORTING) {
     update_sorting_scene(mouse_is_down, mouse_pressed, mouse_released);
@@ -2640,8 +2971,13 @@ function update_game(game_state) {
   mouse_was_down = mouse_is_down;
 }
 
+// Arcade-2D requires every GameObject to be created before build_game().
+// Prebuild both gameplay scenes, hide them, then let the menu reveal and
+// configure the selected difficulty without creating objects in update_loop.
 initialise_collection_scene();
+hide_collection_scene();
 initialise_sorting_scene();
+create_start_menu();
 update_loop(update_game);
 
 // build_game must be the final statement in Source Academy.
