@@ -1,0 +1,125 @@
+import {
+    piano,
+    cello,
+    violin,
+    trombone,
+    consecutively,
+    simultaneously,
+    silence_sound,
+    play,
+    letter_name_to_midi_note
+} from "sound";
+
+
+
+
+ function fast(lengths){
+        return map(x => x * 0.86, lengths);
+    }
+    
+    
+    function convert(notes){
+        return map(letter_name_to_midi_note, notes);
+    }
+    
+
+
+function make_melody(instrument, note_names, lengths) {
+        
+        if (is_null(note_names)) {
+            return silence_sound(0);
+        } 
+        else {
+            
+            const current_note = head(note_names);
+            const current_length = head(lengths);
+            
+            return consecutively(
+                list(
+                    equal(current_note, "R")
+                    ? silence_sound(current_length)
+                    : instrument(current_note, current_length),
+                    make_melody(instrument, tail(note_names), tail(lengths))
+                )
+            );
+        }
+    }
+
+
+
+
+
+   
+// Piano
+const piano_right = make_melody(
+    piano,
+    convert(right_notes),
+    right_lengths
+);
+
+const piano_left = make_melody(
+    piano,
+    convert(left_notes),
+    left_lengths
+);
+
+
+play(simultaneously(list(piano_right, piano_left)));
+
+
+
+
+// Cello
+const cello_right = make_melody(
+    cello,
+    convert(right_notes),
+    right_lengths
+);
+
+const cello_left = make_melody(
+    cello,
+    convert(left_notes),
+    left_lengths
+);
+
+
+play(simultaneously(list(cello_right, cello_left)));
+
+
+
+
+// Violin
+const violin_right = make_melody(
+    violin,
+    convert(right_notes),
+    right_lengths
+);
+
+const violin_left = make_melody(
+    violin,
+    convert(left_notes),
+    left_lengths
+);
+
+
+play(simultaneously(list(violin_right, violin_left)));
+
+
+
+
+// Trombone
+const trombone_right = make_melody(
+    trombone,
+    convert(right_notes),
+    right_lengths
+);
+
+const trombone_left = make_melody(
+    trombone,
+    convert(left_notes),
+    left_lengths
+);
+    
+    
+play(simultaneously(list(trombone_right, trombone_left)));
+
