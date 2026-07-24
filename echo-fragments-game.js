@@ -51,7 +51,8 @@ const TARGET_FRAGMENT_IDS = [
   "song_01_fragment_G",
   "song_01_fragment_H"
 ];
-const TARGET_FRAGMENT_LABELS = ["B", "C", "A", "D", "E", "F", "G", "H"];
+const TARGET_LABEL_POOL = ["A", "B", "C", "D", "E", "F", "G", "H"];
+let target_fragment_labels = ["B", "C", "A", "D", "E", "F", "G", "H"];
 
 const AUDIO_BASE_URL =
   "https://raw.githubusercontent.com/JimmyZheng6/"
@@ -128,7 +129,7 @@ const DISTRACTOR_FRAGMENT_IDS = [
   "false_fragment_c",
   "false_fragment_d"
 ];
-const DISTRACTOR_FRAGMENT_LABELS = ["X1", "X2", "X3", "X4"];
+const DISTRACTOR_FRAGMENT_LABELS = ["I", "J", "K", "L"];
 
 // Fixed sequence item: [zero_based_position, display_label, fragment_data]
 // These two repeats are shown in sorting but can never be dragged.
@@ -168,6 +169,15 @@ const FRAGMENT_COLOURS = [
   [202, 81, 130, 255]
 ];
 
+// Distractors use their own colours. They remain visually plausible notes,
+// but never reuse the exact colour assigned to a correct fragment.
+const DISTRACTOR_FRAGMENT_COLOURS = [
+  [64, 169, 158, 255],
+  [188, 116, 139, 255],
+  [137, 158, 82, 255],
+  [119, 124, 174, 255]
+];
+
 const DIFFICULTY_EASY = 1;
 const DIFFICULTY_HARD = 2;
 const DIFFICULTY_EXTREME = 3;
@@ -185,6 +195,49 @@ let wall_percent = 17;
 let game_has_started = false;
 
 set_dimensions([CANVAS_WIDTH, CANVAS_HEIGHT]);
+
+function input_letter_key_down(lowercase_key, uppercase_key) {
+  return input_key_down(lowercase_key)
+    || input_key_down(uppercase_key);
+}
+
+function randomise_target_fragment_labels() {
+  const shuffled_labels = [];
+
+  for (let index = 0;
+       index < array_length(TARGET_LABEL_POOL);
+       index = index + 1) {
+    shuffled_labels[index] = TARGET_LABEL_POOL[index];
+  }
+
+  for (let index = array_length(shuffled_labels) - 1;
+       index > 0;
+       index = index - 1) {
+    const swap_index = math_floor(math_random() * (index + 1));
+    const old_value = shuffled_labels[index];
+    shuffled_labels[index] = shuffled_labels[swap_index];
+    shuffled_labels[swap_index] = old_value;
+  }
+
+  // Prevent the new visible solution from being identical to the previous
+  // one, even in the rare case that the shuffle produces the same order.
+  let matches_previous = true;
+  for (let index = 0;
+       index < array_length(shuffled_labels);
+       index = index + 1) {
+    if (shuffled_labels[index] !== target_fragment_labels[index]) {
+      matches_previous = false;
+    }
+  }
+
+  if (matches_previous) {
+    const first_label = shuffled_labels[0];
+    shuffled_labels[0] = shuffled_labels[1];
+    shuffled_labels[1] = first_label;
+  }
+
+  target_fragment_labels = shuffled_labels;
+}
 
 // ============================================================
 // Shared scene visibility helpers
@@ -352,6 +405,7 @@ function start_selected_difficulty(level) {
   }
 
   set_difficulty(level);
+  randomise_target_fragment_labels();
   hide_start_scene();
   show_collection_scene();
   apply_collection_difficulty();
@@ -795,7 +849,9 @@ function create_world_fragments() {
         && fragment_position_is_far(row, column);
     }
 
-    const colour = FRAGMENT_COLOURS[index % 8];
+    const colour = index < FRAGMENT_COUNT
+      ? FRAGMENT_COLOURS[index]
+      : DISTRACTOR_FRAGMENT_COLOURS[index - FRAGMENT_COUNT];
     const note = register_collection_object(
       update_color(
         update_scale(create_text("♪"), [1.8, 1.8]),
@@ -1175,7 +1231,7 @@ function move_player() {
   const position = query_position(player);
   let x = position[0];
   let y = position[1];
-  const sprint_key_down = input_key_down("f");
+  const sprint_key_down = input_letter_key_down("f", "F");
 
   if (!sprint_key_down) {
     sprint_locked = false;
@@ -1203,16 +1259,16 @@ function move_player() {
     stamina = MAX_STAMINA;
   }
 
-  if (input_key_down("w")) {
+  if (input_letter_key_down("w", "W")) {
     y = y - current_speed;
   }
-  if (input_key_down("s")) {
+  if (input_letter_key_down("s", "S")) {
     y = y + current_speed;
   }
-  if (input_key_down("a")) {
+  if (input_letter_key_down("a", "A")) {
     x = x - current_speed;
   }
-  if (input_key_down("d")) {
+  if (input_letter_key_down("d", "D")) {
     x = x + current_speed;
   }
 
@@ -2047,6 +2103,10 @@ function configure_sorting_fragments(fragment_list) {
     fragment[SORT_SONG_ID_INDEX] = data[DATA_SONG_ID_INDEX];
     fragment[SORT_DATA_INDEX] = data;
     update_text(fragment[SORT_LABEL_TEXT_INDEX], label);
+    update_color(
+      fragment[SORT_SHAPE_INDEX],
+      colour_for_fragment(data)
+    );
     update_text(fragment[SORT_BUTTON_TEXT_INDEX], "Play");
     update_color(
       fragment[SORT_BUTTON_INDEX],
@@ -2063,7 +2123,7 @@ function label_for_fragment_id(fragment_id) {
        index < FRAGMENT_COUNT;
        index = index + 1) {
     if (TARGET_FRAGMENT_IDS[index] === fragment_id) {
-      return TARGET_FRAGMENT_LABELS[index];
+      return target_fragment_labels[index];
     }
   }
 
@@ -2947,9 +3007,9 @@ function update_sorting_scene(
 // ============================================================
 
 function update_game(game_state) {
-  const e_is_down = input_key_down("e");
-  const q_is_down = input_key_down("q");
-  const r_is_down = input_key_down("r");
+  const e_is_down = input_letter_key_down("e", "E");
+  const q_is_down = input_letter_key_down("q", "Q");
+  const r_is_down = input_letter_key_down("r", "R");
   const e_pressed = e_is_down && !e_was_down;
   const q_pressed = q_is_down && !q_was_down;
   const r_pressed = r_is_down && !r_was_down;
